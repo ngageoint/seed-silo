@@ -48,4 +48,10 @@ var routes = Routes{
 		"/registry/delete",
 		DeleteRegistry,
 	},
+	Route{
+		"ScanRegistry",
+		"POST",
+		"/registry/scan",
+		ScanRegistry,
+	},
 }

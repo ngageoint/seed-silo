@@ -13,7 +13,7 @@ type Image struct {
 func CreateImageTable(db *sql.DB) {
 	// create table if not exists
 	sql_table := `
-	CREATE TABLE IF NOT EXISTS RegistryInfo(
+	CREATE TABLE IF NOT EXISTS Image(
 		id INTEGER NOT NULL PRIMARY KEY,
 		name TEXT,
 		registry TEXT,

@@ -31,7 +31,7 @@ func CreateRegistryTable(db *sql.DB) {
 	if err != nil { panic(err) }
 }
 
-func StoreRegistry(db *sql.DB, registries []RegistryInfo) {
+func StoreRegistry(db *sql.DB, registries []RegistryInfo) error {
 	sql_addreg := `
 	INSERT OR REPLACE INTO RegistryInfo(
 		id,
@@ -43,13 +43,15 @@ func StoreRegistry(db *sql.DB, registries []RegistryInfo) {
 	`
 
 	stmt, err := db.Prepare(sql_addreg)
-	if err != nil { panic(err) }
+	if err != nil { return err }
 	defer stmt.Close()
 
 	for _, reg := range registries {
 		_, err2 := stmt.Exec(reg.ID, reg.Name, reg.Url, reg.Username, reg.Password)
-		if err2 != nil { panic(err2) }
+		if err2 != nil { return err2 }
 	}
+
+	return nil
 }
 
 func ReadRegistries(db *sql.DB) []RegistryInfo {
