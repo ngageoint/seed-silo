@@ -9,6 +9,8 @@ import (
 
 	"github.com/JohnPTobe/seed-discover/models"
 	"log"
+	"github.com/ngageoint/seed-cli/registry"
+	"strings"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -63,14 +65,23 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
+	url := reginfo.Url
+	username := reginfo.Username
+	password := reginfo.Password
 
-	reginfolist := []models.RegistryInfo{}
-	reginfolist = append(reginfolist, reginfo)
-	err = models.StoreRegistry(db, reginfolist)
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusCreated)
-	if err != nil {
-		panic(err)
+	registry, err := registry.CreateRegistry(url, username, password)
+	if registry != nil && err == nil {
+		humanError := checkError(err, url, username, password)
+		fmt.Fprint(w, humanError, "\n")
+	} else {
+		reginfolist := []models.RegistryInfo{}
+		reginfolist = append(reginfolist, reginfo)
+		err = models.StoreRegistry(db, reginfolist)
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusCreated)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -79,5 +90,67 @@ func DeleteRegistry(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRegistry(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT * FROM RegistryInfo")
+	defer rows.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	//clear out image table before scanning
+	_, err = db.Exec("DELETE FROM Image")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for rows.Next() {
+		item := models.RegistryInfo{}
+		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
+		if err2 != nil { panic(err2) }
+		registry, err := registry.CreateRegistry(item.Url, item.Username, item.Password)
+		if err != nil {
+			humanError := checkError(err, item.Url, item.Username, item.Password)
+			fmt.Fprint(w, humanError, "\n")
+		}
+
+		imgStrs, err := registry.Images(item.Org)
+
+		images := []models.Image{}
+
+		for _, img := range imgStrs {
+			//TODO: get seed manifest
+			image := models.Image{Name: img, Registry: item.Name, Org: item.Org, Manifest: ""}
+			images = append(images, image)
+			b, err := json.Marshal(img)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Fprint(w, string(b), "\n")
+		}
+
+		models.StoreImage(db, images)
+	}
+}
+
+func checkError(err error, url, username, password string) string {
+	if err == nil {
+		return ""
+	}
+
+	errStr := err.Error()
+
+	humanError := ""
+
+	if strings.Contains(errStr, "status=401") {
+		if username == "" || password == "" {
+			humanError = "The specified registry requires a login.  Please try again with a username (-u) and password (-p)."
+		} else {
+			humanError = "Incorrect username/password."
+		}
+	} else if strings.Contains(errStr, "status=404") {
+		humanError = "Connected to registry but received a 404 error. Please check the url and try again."
+	} else {
+		humanError = "Could not connect to the specified registry. Please check the url and try again."
+	}
+	return humanError
 }

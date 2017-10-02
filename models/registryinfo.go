@@ -10,6 +10,7 @@ type RegistryInfo  struct{
 	ID int `db:id`
 	Name string `db:name`
 	Url string `db:url`
+	Org string `db:org`
 	Username string `db:username`
 	Password string `db:password`
 }
@@ -22,6 +23,7 @@ func CreateRegistryTable(db *sql.DB) {
 		id INTEGER NOT NULL PRIMARY KEY,
 		name TEXT,
 		url TEXT,
+		org TEXT,
 		username TEXT,
 		password TEXT
 	);
