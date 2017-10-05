@@ -11,6 +11,8 @@ import (
 	"log"
 	"github.com/ngageoint/seed-cli/registry"
 	"strings"
+	"github.com/ngageoint/seed-cli/commands"
+	"github.com/ngageoint/seed-cli/util"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +45,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		}
 		// Do something with the map
 		for key, val := range myMap {
-			fmt.Fprint(w, "Key: ", key, "Value: ", val,  "\n")
+			fmt.Fprint(w, "Key: ", key, " Value: ", val,  "\n")
 		}
 	}
 	fmt.Fprint(w, "Done!\n")
@@ -102,6 +104,9 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusAccepted)
+
 	for rows.Next() {
 		item := models.RegistryInfo{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
@@ -117,8 +122,19 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		images := []models.Image{}
 
 		for _, img := range imgStrs {
-			//TODO: get seed manifest
-			image := models.Image{Name: img, Registry: item.Name, Org: item.Org, Manifest: ""}
+			//TODO: find better, lightweight way to get manifest
+			err := commands.DockerPull(img, item.Url, item.Org, item.Username, item.Password)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			manifest, err := util.GetSeedManifestFromImage(img)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			image := models.Image{Name: img, Registry: item.Name, Org: item.Org, Manifest: manifest}
 			images = append(images, image)
 			b, err := json.Marshal(img)
 			if err != nil {
@@ -130,6 +146,12 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 
 		models.StoreImage(db, images)
 	}
+}
+
+func ListImages(w http.ResponseWriter, r *http.Request) {
+	images := models.ReadImages(db)
+
+	json.NewEncoder(w).Encode(images)
 }
 
 func checkError(err error, url, username, password string) string {

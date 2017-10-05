@@ -250,3 +250,52 @@ func RestartRegistry() error {
 
 	return nil
 }
+
+func GetSeedManifestFromImage(imageName string) (string, error) {
+	cmdStr := "inspect -f '{{index .Config.Labels \"com.ngageoint.seed.manifest\"}}'" + imageName
+	PrintUtil( "INFO: Retrieving seed manifest from %s LABEL=com.ngageoint.seed.manifest\n", imageName)
+
+	inspectCommand := exec.Command("docker", "inspect", "-f",
+		"'{{index .Config.Labels \"com.ngageoint.seed.manifest\"}}'", imageName)
+
+	errPipe, err := inspectCommand.StderrPipe()
+	if err != nil {
+		PrintUtil("ERROR: error attaching to docker inspect command stderr. %s\n", err.Error())
+	}
+
+	// Attach stdout pipe
+	outPipe, err := inspectCommand.StdoutPipe()
+	if err != nil {
+		PrintUtil("ERROR: error attaching to docker inspect command stdout. %s\n", err.Error())
+	}
+
+	// Run docker inspect
+	if err = inspectCommand.Start(); err != nil {
+		PrintUtil( "ERROR: error executing docker %s. %s\n", cmdStr,err.Error())
+	}
+
+	// Print out any std out
+	seedBytes, err := ioutil.ReadAll(outPipe)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "ERROR: Error retrieving docker %s stdout.\n%s\n",
+			cmdStr, err.Error())
+	}
+
+	// check for errors on stderr
+	slurperr, _ := ioutil.ReadAll(errPipe)
+	if string(slurperr) != "" {
+		PrintUtil( "ERROR: Error executing docker %s:\n%s\n",
+			cmdStr, string(slurperr))
+	}
+
+	// un-escape special characters
+	seedStr := string(seedBytes)
+	seedStr = strings.Replace(seedStr, "\\\"", "\"", -1)
+	seedStr = strings.Replace(seedStr, "\\\"", "\"", -1) //extra replace to fix extra back slashes added by docker build command
+	seedStr = strings.Replace(seedStr, "\\$", "$", -1)
+	seedStr = strings.Replace(seedStr, "\\/", "/", -1)
+	seedStr = strings.TrimSpace(seedStr)
+	seedStr = strings.TrimSuffix(strings.TrimPrefix(seedStr, "'\""), "\"'")
+
+	return seedStr, err
+}
