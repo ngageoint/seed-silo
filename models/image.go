@@ -1,6 +1,9 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
+	"log"
+)
 
 type Image struct {
 	ID int `db:id`
@@ -14,7 +17,7 @@ func CreateImageTable(db *sql.DB) {
 	// create table if not exists
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Image(
-		id INTEGER NOT NULL PRIMARY KEY,
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
 		registry TEXT,
 		org TEXT,
@@ -28,13 +31,12 @@ func CreateImageTable(db *sql.DB) {
 
 func StoreImage(db *sql.DB, images []Image) {
 	sql_addimg := `
-	INSERT OR REPLACE INTO RegistryInfo(
-		id,
+	INSERT OR REPLACE INTO Image(
 		name,
-		url,
-		username,
-		password
-	) values(?, ?, ?, ?, ?)
+		registry,
+		org,
+		manifest
+	) values(?, ?, ?, ?)
 	`
 
 	stmt, err := db.Prepare(sql_addimg)
@@ -42,14 +44,14 @@ func StoreImage(db *sql.DB, images []Image) {
 	defer stmt.Close()
 
 	for _, img := range images {
-		_, err2 := stmt.Exec(img.ID, img.Name, img.Registry, img.Org, img.Manifest)
+		_, err2 := stmt.Exec(img.Name, img.Registry, img.Org, img.Manifest)
 		if err2 != nil { panic(err2) }
 	}
 }
 
 func ReadImages(db *sql.DB) []Image {
 	sql_readall := `
-	SELECT * FROM RegistryInfo
+	SELECT * FROM Image
 	ORDER BY id ASC
 	`
 
@@ -63,6 +65,10 @@ func ReadImages(db *sql.DB) []Image {
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Registry, &item.Org, &item.Manifest)
 		if err2 != nil { panic(err2) }
 		result = append(result, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
 	}
 	return result
 }

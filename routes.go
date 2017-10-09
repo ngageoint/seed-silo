@@ -50,13 +50,13 @@ var routes = Routes{
 	},
 	Route{
 		"ScanRegistry",
-		"POST",
+		"GET",
 		"/registry/scan",
 		ScanRegistry,
 	},
 	Route{
 		"ListImages",
-		"POST",
+		"GET",
 		"/images/list",
 		ListImages,
 	},

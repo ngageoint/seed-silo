@@ -48,6 +48,15 @@ func Index(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "Key: ", key, " Value: ", val,  "\n")
 		}
 	}
+	rows.Close()
+
+	rows, err = db.Query("SELECT * FROM Image")
+	for rows.Next() {
+		img := models.Image{}
+		rows.Scan(&img.ID, &img.Name, &img.Registry, &img.Org, &img.Manifest)
+		fmt.Fprintln(w, img)
+	}
+	rows.Close()
 	fmt.Fprint(w, "Done!\n")
 }
 
@@ -63,6 +72,7 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 	if err := json.Unmarshal(body, &reginfo); err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(422) // unprocessable entity
+		panic(err)
 		if err := json.NewEncoder(w).Encode(err); err != nil {
 			panic(err)
 		}
@@ -72,9 +82,9 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 	password := reginfo.Password
 
 	registry, err := registry.CreateRegistry(url, username, password)
-	if registry != nil && err == nil {
+	if registry == nil || err != nil {
 		humanError := checkError(err, url, username, password)
-		fmt.Fprint(w, humanError, "\n")
+		log.Print(humanError)
 	} else {
 		reginfolist := []models.RegistryInfo{}
 		reginfolist = append(reginfolist, reginfo)
@@ -92,25 +102,30 @@ func DeleteRegistry(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRegistry(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Scanning registries...")
 	rows, err := db.Query("SELECT * FROM RegistryInfo")
-	defer rows.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Fprintln(w, "Scanning registries...")
 
 	//clear out image table before scanning
 	_, err = db.Exec("DELETE FROM Image")
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Fprintln(w, "Scanning registries...")
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusAccepted)
+
+	images := []models.Image{}
 
 	for rows.Next() {
 		item := models.RegistryInfo{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
 		if err2 != nil { panic(err2) }
+		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", item.Name, item.Url, item.Org )
 		registry, err := registry.CreateRegistry(item.Url, item.Username, item.Password)
 		if err != nil {
 			humanError := checkError(err, item.Url, item.Username, item.Password)
@@ -119,8 +134,6 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 
 		imgStrs, err := registry.Images(item.Org)
 
-		images := []models.Image{}
-
 		for _, img := range imgStrs {
 			//TODO: find better, lightweight way to get manifest
 			err := commands.DockerPull(img, item.Url, item.Org, item.Username, item.Password)
@@ -128,6 +141,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(err)
 				continue
 			}
+
 			manifest, err := util.GetSeedManifestFromImage(img)
 			if err != nil {
 				fmt.Println(err)
@@ -143,12 +157,21 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 			}
 			fmt.Fprint(w, string(b), "\n")
 		}
-
-		models.StoreImage(db, images)
 	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	rows.Close()
+
+	models.StoreImage(db, images)
 }
 
 func ListImages(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
 	images := models.ReadImages(db)
 
 	json.NewEncoder(w).Encode(images)

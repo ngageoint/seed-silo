@@ -4,6 +4,7 @@ package models
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
+	"log"
 )
 
 type RegistryInfo  struct{
@@ -20,7 +21,7 @@ func CreateRegistryTable(db *sql.DB) {
 	// create table if not exists
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS RegistryInfo(
-		id INTEGER NOT NULL PRIMARY KEY,
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
 		url TEXT,
 		org TEXT,
@@ -36,12 +37,12 @@ func CreateRegistryTable(db *sql.DB) {
 func StoreRegistry(db *sql.DB, registries []RegistryInfo) error {
 	sql_addreg := `
 	INSERT OR REPLACE INTO RegistryInfo(
-		id,
 		name,
 		url,
+	    org,
 		username,
 		password
-	) values(?, ?, ?, ?, ?)
+	) values(?, ?, ?, ?, ?, ?)
 	`
 
 	stmt, err := db.Prepare(sql_addreg)
@@ -49,7 +50,7 @@ func StoreRegistry(db *sql.DB, registries []RegistryInfo) error {
 	defer stmt.Close()
 
 	for _, reg := range registries {
-		_, err2 := stmt.Exec(reg.ID, reg.Name, reg.Url, reg.Username, reg.Password)
+		_, err2 := stmt.Exec(reg.ID, reg.Name, reg.Url, reg.Org, reg.Username, reg.Password)
 		if err2 != nil { return err2 }
 	}
 
@@ -72,6 +73,10 @@ func ReadRegistries(db *sql.DB) []RegistryInfo {
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Url)
 		if err2 != nil { panic(err2) }
 		result = append(result, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
 	}
 	return result
 }
