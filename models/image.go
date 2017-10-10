@@ -6,10 +6,10 @@ import (
 )
 
 type Image struct {
-	ID int `db:id`
-	Name string `db:name`
+	ID       int    `db:id`
+	Name     string `db:name`
 	Registry string `db:registry`
-	Org string `db:org`
+	Org      string `db:org`
 	Manifest string `db:manifest`
 }
 
@@ -26,7 +26,9 @@ func CreateImageTable(db *sql.DB) {
 	`
 
 	_, err := db.Exec(sql_table)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 }
 
 func StoreImage(db *sql.DB, images []Image) {
@@ -40,12 +42,16 @@ func StoreImage(db *sql.DB, images []Image) {
 	`
 
 	stmt, err := db.Prepare(sql_addimg)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	defer stmt.Close()
 
 	for _, img := range images {
 		_, err2 := stmt.Exec(img.Name, img.Registry, img.Org, img.Manifest)
-		if err2 != nil { panic(err2) }
+		if err2 != nil {
+			panic(err2)
+		}
 	}
 }
 
@@ -56,14 +62,18 @@ func ReadImages(db *sql.DB) []Image {
 	`
 
 	rows, err := db.Query(sql_readall)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	defer rows.Close()
 
 	var result []Image
 	for rows.Next() {
 		item := Image{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Registry, &item.Org, &item.Manifest)
-		if err2 != nil { panic(err2) }
+		if err2 != nil {
+			panic(err2)
+		}
 		result = append(result, item)
 	}
 

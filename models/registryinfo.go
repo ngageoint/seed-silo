@@ -1,21 +1,18 @@
 package models
 
-
 import (
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
 
-type RegistryInfo  struct{
-	ID int `db:id`
-	Name string `db:name`
-	Url string `db:url`
-	Org string `db:org`
+type RegistryInfo struct {
+	ID       int    `db:id`
+	Name     string `db:name`
+	Url      string `db:url`
+	Org      string `db:org`
 	Username string `db:username`
 	Password string `db:password`
 }
-
 
 func CreateRegistryTable(db *sql.DB) {
 	// create table if not exists
@@ -31,7 +28,9 @@ func CreateRegistryTable(db *sql.DB) {
 	`
 
 	_, err := db.Exec(sql_table)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 }
 
 func StoreRegistry(db *sql.DB, registries []RegistryInfo) error {
@@ -46,12 +45,16 @@ func StoreRegistry(db *sql.DB, registries []RegistryInfo) error {
 	`
 
 	stmt, err := db.Prepare(sql_addreg)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer stmt.Close()
 
 	for _, reg := range registries {
 		_, err2 := stmt.Exec(reg.ID, reg.Name, reg.Url, reg.Org, reg.Username, reg.Password)
-		if err2 != nil { return err2 }
+		if err2 != nil {
+			return err2
+		}
 	}
 
 	return nil
@@ -64,14 +67,18 @@ func ReadRegistries(db *sql.DB) []RegistryInfo {
 	`
 
 	rows, err := db.Query(sql_readall)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 	defer rows.Close()
 
 	var result []RegistryInfo
 	for rows.Next() {
 		item := RegistryInfo{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Url)
-		if err2 != nil { panic(err2) }
+		if err2 != nil {
+			panic(err2)
+		}
 		result = append(result, item)
 	}
 

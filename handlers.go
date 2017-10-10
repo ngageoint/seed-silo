@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/JohnPTobe/seed-discover/models"
-	"log"
-	"github.com/ngageoint/seed-cli/registry"
-	"strings"
 	"github.com/ngageoint/seed-cli/commands"
+	"github.com/ngageoint/seed-cli/registry"
 	"github.com/ngageoint/seed-cli/util"
 )
 
@@ -45,7 +45,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		}
 		// Do something with the map
 		for key, val := range myMap {
-			fmt.Fprint(w, "Key: ", key, " Value: ", val,  "\n")
+			fmt.Fprint(w, "Key: ", key, " Value: ", val, "\n")
 		}
 	}
 	rows.Close()
@@ -124,8 +124,10 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		item := models.RegistryInfo{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
-		if err2 != nil { panic(err2) }
-		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", item.Name, item.Url, item.Org )
+		if err2 != nil {
+			panic(err2)
+		}
+		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", item.Name, item.Url, item.Org)
 		registry, err := registry.CreateRegistry(item.Url, item.Username, item.Password)
 		if err != nil {
 			humanError := checkError(err, item.Url, item.Username, item.Password)
