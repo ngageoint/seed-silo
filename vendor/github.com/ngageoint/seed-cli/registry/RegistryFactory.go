@@ -6,6 +6,7 @@ import (
 	"github.com/ngageoint/seed-cli/registry/containeryard"
 	"github.com/ngageoint/seed-cli/registry/dockerhub"
 	"github.com/ngageoint/seed-cli/registry/v2"
+	"github.com/ngageoint/seed-cli/objects"
 )
 
 type RepositoryRegistry interface {
@@ -14,6 +15,7 @@ type RepositoryRegistry interface {
 	Repositories(org string) ([]string, error)
 	Tags(repository, org string) ([]string, error)
 	Images(org string) ([]string, error)
+	ImagesWithManifests(org string) ([]objects.Image, error)
 }
 
 type RepoRegistryFactory func(url, username, password string) (RepositoryRegistry, error)

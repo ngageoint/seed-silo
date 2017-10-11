@@ -13,6 +13,13 @@ import (
 	"github.com/ngageoint/seed-cli/util"
 )
 
+type Image struct {
+	Name     string
+	Registry string
+	Org      string
+	Manifest string
+}
+
 //Seed represents a seed.manifest.json object.
 type Seed struct {
 	SeedVersion string `json:"seedVersion"`

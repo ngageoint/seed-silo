@@ -10,9 +10,7 @@ import (
 	"strings"
 
 	"github.com/JohnPTobe/seed-discover/models"
-	"github.com/ngageoint/seed-cli/commands"
 	"github.com/ngageoint/seed-cli/registry"
-	"github.com/ngageoint/seed-cli/util"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -107,14 +105,12 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Fprintln(w, "Scanning registries...")
 
 	//clear out image table before scanning
 	_, err = db.Exec("DELETE FROM Image")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Fprintln(w, "Scanning registries...")
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusAccepted)
@@ -123,7 +119,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		item := models.RegistryInfo{}
-		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
+		err2 := rows.Scan(&item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -134,24 +130,12 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, humanError, "\n")
 		}
 
-		imgStrs, err := registry.Images(item.Org)
+		images, err := registry.ImagesWithManifests(item.Org)
 
-		for _, img := range imgStrs {
-			//TODO: find better, lightweight way to get manifest
-			err := commands.DockerPull(img, item.Url, item.Org, item.Username, item.Password)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-
-			manifest, err := util.GetSeedManifestFromImage(img)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-
-			image := models.Image{Name: img, Registry: item.Name, Org: item.Org, Manifest: manifest}
-			images = append(images, image)
+		dbImages := []models.Image{}
+		for _, img := range images {
+			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest}
+			dbImages = append(dbImages, image)
 			b, err := json.Marshal(img)
 			if err != nil {
 				fmt.Println(err)
@@ -177,6 +161,15 @@ func ListImages(w http.ResponseWriter, r *http.Request) {
 	images := models.ReadImages(db)
 
 	json.NewEncoder(w).Encode(images)
+}
+
+func ListRegistries(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+
+	registries := models.ReadRegistries(db)
+
+	json.NewEncoder(w).Encode(registries)
 }
 
 func checkError(err error, url, username, password string) string {

@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"github.com/ngageoint/seed-cli/constants"
+	"time"
 )
 
 //CheckSudo Checks error for telltale sign seed command should be run as sudo
@@ -249,6 +251,56 @@ func RestartRegistry() error {
 	}
 
 	return nil
+}
+
+//Dockerpull pulls specified image from remote repository (default docker.io)
+//returns the name of the remote image retrieved, if any
+func DockerPull(image, registry, org, username, password string) (string, error) {
+	if username != "" {
+		//set config dir so we don't stomp on other users' logins with sudo
+		configDir := constants.DockerConfigDir + time.Now().Format(time.RFC3339)
+		os.Setenv(constants.DockerConfigKey, configDir)
+		defer RemoveAllFiles(configDir)
+		defer os.Unsetenv(constants.DockerConfigKey)
+
+		err := Login(registry, username, password)
+		if err != nil {
+			fmt.Println(err)
+			return "", err
+		}
+	}
+
+	if registry == "" {
+		registry = constants.DefaultRegistry
+	}
+
+	registry = strings.Replace(registry, "https://hub.docker.com", "docker.io", 1)
+
+	remoteImage := fmt.Sprintf("%s/%s", registry, image)
+
+	if org != "" {
+		remoteImage = fmt.Sprintf("%s/%s/%s", registry, org, image)
+	}
+
+	var errs, out bytes.Buffer
+	// pull image
+	pullArgs := []string{"pull", remoteImage}
+	pullCmd := exec.Command("docker", pullArgs...)
+	pullCmd.Stderr = io.MultiWriter(os.Stderr, &errs)
+	pullCmd.Stdout = &out
+
+	err := pullCmd.Run()
+	if err != nil {
+		PrintUtil( "ERROR: Error executing docker pull.\n%s\n", err.Error())
+		return "", err
+	}
+
+	if errs.String() != "" {
+		PrintUtil( "ERROR: Error reading stderr %s\n", errs.String())
+		return "", errors.New(errs.String())
+	}
+
+	return remoteImage, nil
 }
 
 func GetSeedManifestFromImage(imageName string) (string, error) {

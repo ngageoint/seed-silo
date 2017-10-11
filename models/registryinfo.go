@@ -5,6 +5,7 @@ import (
 	"log"
 )
 
+//TODO: find better way to store credentials for low side registries
 type RegistryInfo struct {
 	ID       int    `db:id`
 	Name     string `db:name`
@@ -41,7 +42,7 @@ func StoreRegistry(db *sql.DB, registries []RegistryInfo) error {
 	    org,
 		username,
 		password
-	) values(?, ?, ?, ?, ?, ?)
+	) values(?, ?, ?, ?, ?)
 	`
 
 	stmt, err := db.Prepare(sql_addreg)
@@ -62,7 +63,7 @@ func StoreRegistry(db *sql.DB, registries []RegistryInfo) error {
 
 func ReadRegistries(db *sql.DB) []RegistryInfo {
 	sql_readall := `
-	SELECT * FROM RegistryInfo
+	SELECT id, name, url, org FROM RegistryInfo
 	ORDER BY id ASC
 	`
 
@@ -75,7 +76,7 @@ func ReadRegistries(db *sql.DB) []RegistryInfo {
 	var result []RegistryInfo
 	for rows.Next() {
 		item := RegistryInfo{}
-		err2 := rows.Scan(&item.ID, &item.Name, &item.Url)
+		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org)
 		if err2 != nil {
 			panic(err2)
 		}
