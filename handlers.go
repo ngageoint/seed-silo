@@ -11,6 +11,7 @@ import (
 
 	"github.com/JohnPTobe/seed-discover/models"
 	"github.com/ngageoint/seed-cli/registry"
+	"github.com/gorilla/mux"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -136,12 +137,11 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		for _, img := range images {
 			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest}
 			dbImages = append(dbImages, image)
-			b, err := json.Marshal(img)
+			_, err := json.Marshal(img)
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			fmt.Fprint(w, string(b), "\n")
 		}
 	}
 
@@ -172,6 +172,22 @@ func ListRegistries(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(registries)
 }
 
+func SearchImages(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	query := vars["query"]
+
+	images := models.ReadImages(db)
+	results := []models.Image{}
+	for _, img := range images {
+		if strings.Contains(img.Name, query) {
+			results = append(results, img)
+			continue
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, results)
+}
+
 func checkError(err error, url, username, password string) string {
 	if err == nil {
 		return ""
@@ -193,4 +209,16 @@ func checkError(err error, url, username, password string) string {
 		humanError = "Could not connect to the specified registry. Please check the url and try again."
 	}
 	return humanError
+}
+
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	respondWithJSON(w, code, map[string]string{"error": message})
+}
+
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	response, _ := json.Marshal(payload)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }

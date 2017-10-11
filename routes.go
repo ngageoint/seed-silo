@@ -66,4 +66,10 @@ var routes = Routes{
 		"/images/list",
 		ListImages,
 	},
+	Route{
+		"SearchImages",
+		"GET",
+		"/images/search/{query}",
+		SearchImages,
+	},
 }
