@@ -180,6 +180,7 @@ func ListRegistries(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(registries)
 }
 
+//TODO: Enhance search with multiple keywords, ranking results
 func SearchImages(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	query := vars["query"]
@@ -188,6 +189,14 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 	results := []models.Image{}
 	for _, img := range images {
 		if strings.Contains(img.Name, query) {
+			results = append(results, img)
+			continue
+		}
+		if strings.Contains(img.Org, query) {
+			results = append(results, img)
+			continue
+		}
+		if strings.Contains(img.Manifest, query) {
 			results = append(results, img)
 			continue
 		}
