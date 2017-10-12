@@ -101,7 +101,6 @@ func DeleteRegistry(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRegistry(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Scanning registries...")
 	rows, err := db.Query("SELECT * FROM RegistryInfo")
 	if err != nil {
 		log.Fatal(err)
@@ -115,12 +114,13 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusAccepted)
+	fmt.Fprintln(w, "Scanning registries...")
 
-	images := []models.Image{}
+	dbImages := []models.Image{}
 
 	for rows.Next() {
 		item := models.RegistryInfo{}
-		err2 := rows.Scan(&item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
+		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -133,7 +133,6 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 
 		images, err := registry.ImagesWithManifests(item.Org)
 
-		dbImages := []models.Image{}
 		for _, img := range images {
 			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest}
 			dbImages = append(dbImages, image)
@@ -151,7 +150,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 
 	rows.Close()
 
-	models.StoreImage(db, images)
+	models.StoreImage(db, dbImages)
 }
 
 func ListImages(w http.ResponseWriter, r *http.Request) {
