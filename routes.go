@@ -44,14 +44,14 @@ var routes = Routes{
 	},
 	Route{
 		"DeleteRegistry",
-		"POST",
-		"/registry/delete",
+		"DELETE",
+		"/registry/delete/{id}",
 		DeleteRegistry,
 	},
 	Route{
 		"ListRegistries",
 		"GET",
-		"/registry/list",
+		"/registries",
 		ListRegistries,
 	},
 	Route{
@@ -63,7 +63,7 @@ var routes = Routes{
 	Route{
 		"ListImages",
 		"GET",
-		"/images/list",
+		"/images",
 		ListImages,
 	},
 	Route{

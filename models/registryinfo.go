@@ -52,13 +52,19 @@ func StoreRegistry(db *sql.DB, registries []RegistryInfo) error {
 	defer stmt.Close()
 
 	for _, reg := range registries {
-		_, err2 := stmt.Exec(reg.ID, reg.Name, reg.Url, reg.Org, reg.Username, reg.Password)
+		_, err2 := stmt.Exec(reg.Name, reg.Url, reg.Org, reg.Username, reg.Password)
 		if err2 != nil {
 			return err2
 		}
 	}
 
 	return nil
+}
+
+func DeleteRegistry(db *sql.DB, id int) error {
+	_, err := db.Exec("DELETE FROM RegistryInfo WHERE id=$1", id)
+
+	return err
 }
 
 func ReadRegistries(db *sql.DB) []RegistryInfo {

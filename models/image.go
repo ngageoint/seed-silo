@@ -6,11 +6,12 @@ import (
 )
 
 type Image struct {
-	ID       int    `db:id`
-	Name     string `db:name`
-	Registry string `db:registry`
-	Org      string `db:org`
-	Manifest string `db:manifest`
+	ID         int    `db:id`
+	RegistryId int    `db:registry_id`
+	Name       string `db:name`
+	Registry   string `db:registry`
+	Org        string `db:org`
+	Manifest   string `db:manifest`
 }
 
 func CreateImageTable(db *sql.DB) {
@@ -18,10 +19,15 @@ func CreateImageTable(db *sql.DB) {
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Image(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		registry_id INTEGER NOT NULL,
 		name TEXT,
 		registry TEXT,
 		org TEXT,
-		manifest TEXT
+		manifest TEXT,
+		CONSTRAINT fk_inv_registry_id
+		    FOREIGN KEY (registry_id)
+		    REFERENCES RegistryInfo (id)
+		    ON DELETE CASCADE
 	);
 	`
 
@@ -34,11 +40,12 @@ func CreateImageTable(db *sql.DB) {
 func StoreImage(db *sql.DB, images []Image) {
 	sql_addimg := `
 	INSERT OR REPLACE INTO Image(
+	    registry_id,
 		name,
 		registry,
 		org,
 		manifest
-	) values(?, ?, ?, ?)
+	) values(?, ?, ?, ?, ?)
 	`
 
 	stmt, err := db.Prepare(sql_addimg)
@@ -48,7 +55,7 @@ func StoreImage(db *sql.DB, images []Image) {
 	defer stmt.Close()
 
 	for _, img := range images {
-		_, err2 := stmt.Exec(img.Name, img.Registry, img.Org, img.Manifest)
+		_, err2 := stmt.Exec(img.RegistryId, img.Name, img.Registry, img.Org, img.Manifest)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -70,7 +77,7 @@ func ReadImages(db *sql.DB) []Image {
 	var result []Image
 	for rows.Next() {
 		item := Image{}
-		err2 := rows.Scan(&item.ID, &item.Name, &item.Registry, &item.Org, &item.Manifest)
+		err2 := rows.Scan(&item.ID, &item.RegistryId, &item.Name, &item.Registry, &item.Org, &item.Manifest)
 		if err2 != nil {
 			panic(err2)
 		}

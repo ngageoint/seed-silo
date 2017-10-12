@@ -7,11 +7,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/JohnPTobe/seed-discover/models"
-	"github.com/ngageoint/seed-cli/registry"
 	"github.com/gorilla/mux"
+	"github.com/ngageoint/seed-cli/registry"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -62,19 +63,14 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func AddRegistry(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
-		panic(err)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 	if err := r.Body.Close(); err != nil {
-		panic(err)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 	var reginfo models.RegistryInfo
 	if err := json.Unmarshal(body, &reginfo); err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(422) // unprocessable entity
-		panic(err)
-		if err := json.NewEncoder(w).Encode(err); err != nil {
-			panic(err)
-		}
+		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
 	}
 	url := reginfo.Url
 	username := reginfo.Username
@@ -83,6 +79,7 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 	registry, err := registry.CreateRegistry(url, username, password)
 	if registry == nil || err != nil {
 		humanError := checkError(err, url, username, password)
+		respondWithError(w, http.StatusBadRequest, humanError)
 		log.Print(humanError)
 	} else {
 		reginfolist := []models.RegistryInfo{}
@@ -91,13 +88,25 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusCreated)
 		if err != nil {
-			panic(err)
+			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
 	}
 }
 
 func DeleteRegistry(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Registry ID")
+		return
+	}
 
+	if err := models.DeleteRegistry(db, id); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func ScanRegistry(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +143,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		images, err := registry.ImagesWithManifests(item.Org)
 
 		for _, img := range images {
-			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest}
+			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest, RegistryId: item.ID}
 			dbImages = append(dbImages, image)
 			_, err := json.Marshal(img)
 			if err != nil {
