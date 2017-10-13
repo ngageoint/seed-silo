@@ -72,4 +72,10 @@ var routes = Routes{
 		"/images/search/{query}",
 		SearchImages,
 	},
+	Route{
+		"ImageManifest",
+		"GET",
+		"/images/{id}/manifest",
+		ImageManifest,
+	},
 }

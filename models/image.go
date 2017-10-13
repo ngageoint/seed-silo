@@ -89,3 +89,12 @@ func ReadImages(db *sql.DB) []Image {
 	}
 	return result
 }
+
+func ReadImage(db *sql.DB, id int) (Image, error) {
+	row := db.QueryRow("SELECT * FROM Image WHERE id=?", id)
+
+	var result Image
+	err := row.Scan(&result.ID, &result.RegistryId, &result.Name, &result.Registry, &result.Org, &result.Manifest)
+
+	return result, err
+}

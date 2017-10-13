@@ -72,7 +72,8 @@ func (r *v2registry) ImagesWithManifests(org string) ([]objects.Image, error) {
 
 	images := []objects.Image{}
 
-	url := r.r.URL
+	url := strings.Replace(r.r.URL, "http://", "", 1)
+	url = strings.Replace(url, "https://", "", 1)
 	username := r.Username
 	password := r.Password
 

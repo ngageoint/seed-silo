@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"github.com/JohnPTobe/seed-discover/models"
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-cli/registry"
+	"github.com/ngageoint/seed-cli/objects"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -203,6 +205,34 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, results)
+}
+
+func ImageManifest(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Registry ID")
+		return
+	}
+
+	image, err := models.ReadImage(db, id)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			respondWithError(w, http.StatusBadRequest, "No image found with that ID")
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+	}
+
+	seed := &objects.Seed{}
+
+	err = json.Unmarshal([]byte(image.Manifest), &seed)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+
+	respondWithJSON(w, http.StatusOK, seed)
 }
 
 func checkError(err error, url, username, password string) string {
