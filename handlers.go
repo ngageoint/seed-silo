@@ -112,40 +112,69 @@ func DeleteRegistry(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRegistry(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT * FROM RegistryInfo")
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		log.Fatal(err)
+		respondWithError(w, http.StatusBadRequest, "Invalid Registry ID")
+		return
+	}
+
+	//clear out image table before scanning
+	err = models.DeleteRegistryImages(db, id)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	registry, err := models.GetRegistry(db, id)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusAccepted)
+
+	list := []models.RegistryInfo{}
+	list = append(list, registry)
+	Scan(w, r, list)
+}
+
+func ScanRegistries(w http.ResponseWriter, r *http.Request) {
+	registries, err := models.GetRegistries(db)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	//clear out image table before scanning
 	_, err = db.Exec("DELETE FROM Image")
 	if err != nil {
-		log.Fatal(err)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(w, "Scanning registries...")
 
-	dbImages := []models.Image{}
+	Scan(w, r, registries)
+}
 
-	for rows.Next() {
-		item := models.RegistryInfo{}
-		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
-		if err2 != nil {
-			panic(err2)
-		}
-		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", item.Name, item.Url, item.Org)
-		registry, err := registry.CreateRegistry(item.Url, item.Username, item.Password)
+func Scan(w http.ResponseWriter, r *http.Request, registries []models.RegistryInfo) {
+	for _, r := range registries {
+		dbImages := []models.Image{}
+		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
+		registry, err := registry.CreateRegistry(r.Url, r.Username, r.Password)
 		if err != nil {
-			humanError := checkError(err, item.Url, item.Username, item.Password)
+			humanError := checkError(err, r.Url, r.Username, r.Password)
 			fmt.Fprint(w, humanError, "\n")
 		}
 
-		images, err := registry.ImagesWithManifests(item.Org)
+		images, err := registry.ImagesWithManifests(r.Org)
 
 		for _, img := range images {
-			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest, RegistryId: item.ID}
+			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest, RegistryId: r.ID}
 			dbImages = append(dbImages, image)
 			_, err := json.Marshal(img)
 			if err != nil {
@@ -153,15 +182,9 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 		}
+
+		models.StoreImage(db, dbImages)
 	}
-
-	if err = rows.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	rows.Close()
-
-	models.StoreImage(db, dbImages)
 }
 
 func ListImages(w http.ResponseWriter, r *http.Request) {
@@ -177,9 +200,13 @@ func ListRegistries(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 
-	registries := models.ReadRegistries(db)
+	registries, err := models.DisplayRegistries(db)
 
-	json.NewEncoder(w).Encode(registries)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+
+	respondWithJSON(w, http.StatusOK, registries)
 }
 
 //TODO: Enhance search with multiple keywords, ranking results

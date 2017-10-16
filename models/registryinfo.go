@@ -67,7 +67,8 @@ func DeleteRegistry(db *sql.DB, id int) error {
 	return err
 }
 
-func ReadRegistries(db *sql.DB) []RegistryInfo {
+//Get list of registries without username/password for display
+func DisplayRegistries(db *sql.DB) ([]RegistryInfo, error) {
 	sql_readall := `
 	SELECT id, name, url, org FROM RegistryInfo
 	ORDER BY id ASC
@@ -75,7 +76,7 @@ func ReadRegistries(db *sql.DB) []RegistryInfo {
 
 	rows, err := db.Query(sql_readall)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -84,7 +85,7 @@ func ReadRegistries(db *sql.DB) []RegistryInfo {
 		item := RegistryInfo{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org)
 		if err2 != nil {
-			panic(err2)
+			return nil, err
 		}
 		result = append(result, item)
 	}
@@ -92,5 +93,33 @@ func ReadRegistries(db *sql.DB) []RegistryInfo {
 	if err = rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	return result
+	return result, err
+}
+
+func GetRegistry(db *sql.DB, id int) (RegistryInfo, error) {
+	row := db.QueryRow("SELECT * FROM RegistryInfo WHERE id=?", id)
+
+	var result RegistryInfo
+	err := row.Scan(&result.ID, &result.Name, &result.Url, &result.Org, &result.Username, &result.Password)
+
+	return result, err
+}
+
+func GetRegistries(db *sql.DB) ([]RegistryInfo, error){
+	rows, err := db.Query("SELECT * FROM RegistryInfo")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []RegistryInfo
+	for rows.Next() {
+		item := RegistryInfo{}
+		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org, &item.Username, &item.Password)
+		if err2 != nil {
+			panic(err2)
+		}
+		result = append(result, item)
+	}
+	return result, err
 }

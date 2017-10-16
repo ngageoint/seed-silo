@@ -1,0 +1,109 @@
+= Silo API
+
+image:https://badges.gitter.im/ngageoint/seed.svg[link="https://gitter.im/ngageoint/seed?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"]
+image:https://travis-ci.org/johnptobe/seed-discovery.svg?branch=master[link="https://travis-ci.org/johnptobe/seed-discovery"]
+
+Silo (Seed Images Located and Obtained) is a REST API provided by the Seed team for discovering Seed images.  The API
+allows users to scan one or more repositories for seed images and then search the resulting images and their manifests
+by keywords.  Frameworks such as Scale can use these endpoints to assist users in finding algorithm images and creating
+jobs out of them.
+
+== Registry
+
+Registries can be added, deleted and scanned. A registry consists of a name, url, organization (optional), username (optional),
+and password (optional).
+
+=== Add Registry
+
+Adds a registry to the list of registries to be scanned.
+
+[cols="h,5a"]
+|===
+| URL
+| /registry/add
+
+| Method
+| POST
+
+| URL Params
+| None
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 201 +
+       Content: {}
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Unable to connect to registry" } +
+         +
+        OR +
+         +
+        Code: 422 Unprocessable Entity +
+        Content: { error : "Error unmarshalling json. " }
+
+|Sample Call
+| curl -H "Content-Type: application/json" -d '{"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}' http://localhost:8080/registry/add
+|===
+
+=== Delete Registry
+
+Removes a registry from the list of registries along with all images associated with that registry.
+
+[cols="h,5a"]
+|===
+| URL
+| /registry/delete/{id}
+
+| Method
+| DELETE
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: { }
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid Registry ID" }
+
+|Sample Call
+| curl "https://localhost:5000/registry/delete/1"
+|===
+
+=== Scan Registries
+
+Removes all existing image entries, scans all registries for seed images and adds them to the database.
+
+[cols="h,5a"]
+|===
+| URL
+| /registry/registries/scan
+
+| Method
+| GET
+
+| URL Params
+| None
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: { }
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid Registry ID" }
+
+|Sample Call
+| curl "https://localhost:5000/registry/delete/1"
+|===

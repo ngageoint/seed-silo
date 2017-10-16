@@ -55,9 +55,15 @@ var routes = Routes{
 		ListRegistries,
 	},
 	Route{
+		"ScanRegistries",
+		"GET",
+		"/registries/scan",
+		ScanRegistries,
+	},
+	Route{
 		"ScanRegistry",
 		"GET",
-		"/registry/scan",
+		"/registry/{id}/scan",
 		ScanRegistry,
 	},
 	Route{

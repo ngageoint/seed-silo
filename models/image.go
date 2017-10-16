@@ -98,3 +98,9 @@ func ReadImage(db *sql.DB, id int) (Image, error) {
 
 	return result, err
 }
+
+func DeleteRegistryImages(db *sql.DB, registryId int) error {
+	_, err := db.Exec("DELETE FROM Image WHERE registry_id=$1", registryId)
+
+	return err
+}
