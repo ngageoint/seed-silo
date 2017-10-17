@@ -1,9 +1,9 @@
-= Silo API
+= SILO API
 
 image:https://badges.gitter.im/ngageoint/seed.svg[link="https://gitter.im/ngageoint/seed?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"]
 image:https://travis-ci.org/johnptobe/seed-discovery.svg?branch=master[link="https://travis-ci.org/johnptobe/seed-discovery"]
 
-Silo (Seed Images Located and Obtained) is a REST API provided by the Seed team for discovering Seed images.  The API
+SILO (Seed Images Location Operation) is a REST API provided by the Seed team for discovering Seed images.  The API
 allows users to scan one or more repositories for seed images and then search the resulting images and their manifests
 by keywords.  Frameworks such as Scale can use these endpoints to assist users in finding algorithm images and creating
 jobs out of them.
@@ -293,7 +293,7 @@ Returns the Seed manifest json for the given image id.
 
 | Success Response
 |       Code: 200 +
-        Content: link:other-document.asciidoc[seed.manifest.json]
+        Content: link:seed.manifest.json[sample manifest]
 
 |Error Response
 |       None
