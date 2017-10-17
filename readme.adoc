@@ -15,7 +15,8 @@ and password (optional).
 
 === Add Registry
 
-Adds a registry to the list of registries to be scanned.
+Adds a registry to the list of registries to be scanned.  An error will be returned and the registry won't be added if
+the daemon is unable to connect to the registry.
 
 [cols="h,5a"]
 |===
@@ -85,7 +86,65 @@ Removes all existing image entries, scans all registries for seed images and add
 [cols="h,5a"]
 |===
 | URL
-| /registry/registries/scan
+| /registries/scan
+
+| Method
+| GET
+
+| URL Params
+| None
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 202 +
+        Content: { }
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:5000/registries/scan"
+|===
+
+=== Scan Registry
+
+Removes all existing image entries, scans all registries for seed images and adds them to the database.
+
+[cols="h,5a"]
+|===
+| URL
+| /registry/{id}/scan
+
+| Method
+| GET
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 202 +
+        Content: { }
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:5000/registry/1/scan"
+|===
+
+=== List Registries
+
+Retrieves all of the registries that have been successfully added
+
+[cols="h,5a"]
+|===
+| URL
+| /registries
 
 | Method
 | GET
@@ -98,12 +157,71 @@ Removes all existing image entries, scans all registries for seed images and add
 
 | Success Response
 |       Code: 200 +
-        Content: { }
+        Content: [ +
+                   { +
+                     "ID": 1, +
+                     "Name": "localhost", +
+                     "Url": "https://localhost:5000", +
+                     "Org": "", +
+                     "Username": "", +
+                     "Password": "" +
+                   } +
+                 ]
 
 |Error Response
-|       Code: 400 Bad Request +
-        Content: { error : "Invalid Registry ID" }
+|       None
 
 |Sample Call
-| curl "https://localhost:5000/registry/delete/1"
+| curl "https://localhost:5000/registries"
+|===
+
+== Image
+
+Images are added/removed by scanning registries. An image consists of a name, registry, organization (optional), and the
+Seed manifest.
+
+=== List Images
+
+Retrieves all of the Seed images that have been scanned from registries
+
+[cols="h,5a"]
+|===
+| URL
+| /images
+
+| Method
+| GET
+
+| URL Params
+| None
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: [ +
+                   { +
+                     "ID": 3, +
+                     "RegistryId": 1, +
+                     "Name": "my-job-0.1.0-seed:0.1.0", +
+                     "Registry": "localhost:5000", +
+                     "Org": "", +
+                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
+                   }, +
+                   { +
+                     "ID": 4, +
+                     "RegistryId": 2, +
+                     "Name": "my-job-0.1.0-seed:0.1.0", +
+                     "Registry": "localhost:5000", +
+                     "Org": "", +
+                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
+                   } +
+                 ]
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:5000/images"
 |===

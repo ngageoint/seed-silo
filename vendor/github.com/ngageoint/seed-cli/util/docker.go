@@ -133,7 +133,8 @@ func Login(registry, username, password string) error {
 
 	err := cmd.Run()
 
-	if errs.String() != "" {
+	//ignore CLI password insecure warning
+	if errs.String() != "" && !strings.Contains(errs.String(), "WARNING"){
 		PrintUtil( "ERROR: Error reading stderr %s\n",
 			errs.String())
 		return errors.New(errs.String())

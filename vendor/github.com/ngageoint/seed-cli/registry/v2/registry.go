@@ -16,6 +16,10 @@ type v2registry struct {
 }
 
 func New(url, username, password string) (*v2registry, error) {
+	if util.PrintUtil == nil {
+		util.InitPrinter(false)
+	}
+
 	reg, err := registry.New(url, username, password)
 	if reg != nil {
 		return &v2registry{r: reg, Username: username, Password: password, Print: util.PrintUtil}, err
@@ -52,7 +56,7 @@ func (r *v2registry) Images(org string) ([]string, error) {
 		}
 		tags, err := r.Tags(repo, org)
 		if err != nil {
-			print(err.Error())
+			r.Print(err.Error())
 			continue
 		}
 		for _, tag := range tags {
@@ -85,7 +89,7 @@ func (r *v2registry) ImagesWithManifests(org string) ([]objects.Image, error) {
 			manifest, err = util.GetSeedManifestFromImage(imageName)
 		}
 		if err != nil {
-			print("ERROR: Could not get manifest: %s\n", err.Error())
+			r.Print("ERROR: Could not get manifest: %s\n", err.Error())
 		}
 
 		imageStruct := objects.Image{Name: imgstr, Registry: url, Org: org, Manifest: manifest}

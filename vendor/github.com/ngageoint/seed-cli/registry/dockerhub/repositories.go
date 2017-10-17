@@ -114,7 +114,7 @@ func (registry *DockerHubRegistry) ImagesWithManifests(org string) ([]objects.Im
 			manifest, err = util.GetSeedManifestFromImage(imageName)
 		}
 		if err != nil {
-			print("ERROR: Could not get manifest: %s\n", err.Error())
+			registry.Print("ERROR: Could not get manifest: %s\n", err.Error())
 		}
 
 		imageStruct := objects.Image{Name: imgstr, Registry: url, Org: org, Manifest: manifest}
