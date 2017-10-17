@@ -30,7 +30,7 @@ the daemon is unable to connect to the registry.
 | None
 
 | Data Params
-| None
+| {"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}
 
 | Success Response
 |       Code: 201 +
@@ -224,4 +224,80 @@ Retrieves all of the Seed images that have been scanned from registries
 
 |Sample Call
 | curl "https://localhost:5000/images"
+|===
+
+=== Search Images
+
+Searches the Seed images that have been scanned from registries and returns images matching the given query.  Images are
+returned if the name, organization or manifest strings match the given query.
+
+[cols="h,5a"]
+|===
+| URL
+| /images/search/{query}
+
+| Method
+| GET
+
+| URL Params
+| query = string
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: [ +
+                   { +
+                     "ID": 3, +
+                     "RegistryId": 1, +
+                     "Name": "my-job-0.1.0-seed:0.1.0", +
+                     "Registry": "localhost:5000", +
+                     "Org": "", +
+                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
+                   }, +
+                   { +
+                     "ID": 4, +
+                     "RegistryId": 2, +
+                     "Name": "my-job-0.1.0-seed:0.1.0", +
+                     "Registry": "localhost:5000", +
+                     "Org": "", +
+                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
+                   } +
+                 ]
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:5000/images/search/test"
+|===
+
+=== Image Manifest
+
+Returns the Seed manifest json for the given image id.
+
+[cols="h,5a"]
+|===
+| URL
+| /images/{id}/manifest
+
+| Method
+| GET
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: link:other-document.asciidoc[seed.manifest.json]
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:5000/images/1/manifest"
 |===
