@@ -84,14 +84,12 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, humanError)
 		log.Print(humanError)
 	} else {
-		reginfolist := []models.RegistryInfo{}
-		reginfolist = append(reginfolist, reginfo)
-		err = models.StoreRegistry(db, reginfolist)
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusCreated)
+		id, err := models.AddRegistry(db, reginfo)
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
+		reginfo.ID = id
+		respondWithJSON(w, http.StatusCreated, reginfo)
 	}
 }
 
@@ -119,6 +117,17 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	registry, err := models.GetRegistry(db, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			respondWithError(w, http.StatusNotFound, "No registry found with that ID")
+			return
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
 	//clear out image table before scanning
 	err = models.DeleteRegistryImages(db, id)
 	if err != nil {
@@ -126,13 +135,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	registry, err := models.GetRegistry(db, id)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
 	w.WriteHeader(http.StatusAccepted)
 
 	list := []models.RegistryInfo{}
@@ -188,12 +191,11 @@ func Scan(w http.ResponseWriter, r *http.Request, registries []models.RegistryIn
 }
 
 func ListImages(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-
+	imageList := []models.Image{}
 	images := models.ReadImages(db)
+	imageList = append(imageList, images...)
 
-	json.NewEncoder(w).Encode(images)
+	respondWithJSON(w, http.StatusOK, imageList)
 }
 
 func ListRegistries(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +208,9 @@ func ListRegistries(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 
-	respondWithJSON(w, http.StatusOK, registries)
+	list := []models.RegistryInfo{}
+	list = append(list, registries...)
+	respondWithJSON(w, http.StatusOK, list)
 }
 
 //TODO: Enhance search with multiple keywords, ranking results
@@ -246,9 +250,11 @@ func ImageManifest(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			respondWithError(w, http.StatusBadRequest, "No image found with that ID")
+			respondWithError(w, http.StatusNotFound, "No image found with that ID")
+			return
 		} else {
 			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 	}
 
