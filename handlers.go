@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/JohnPTobe/seed-discover/models"
+	"github.com/JohnPTobe/silo/models"
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-cli/registry"
 	"github.com/ngageoint/seed-cli/objects"

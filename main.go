@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"database/sql"
 
-	"github.com/JohnPTobe/seed-discover/models"
+	"github.com/JohnPTobe/silo/models"
 )
 
 var db *sql.DB
 
 func init() {
-	db = InitDB("./seed-discovery.db")
+	db = InitDB("./seed-silo.db")
 }
 
 func main() {
