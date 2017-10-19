@@ -76,7 +76,7 @@ Removes a registry from the list of registries along with all images associated 
         Content: { error : "Invalid Registry ID" }
 
 |Sample Call
-| curl "https://localhost:5000/registry/delete/1"
+| curl -X "DELETE" http://localhost:8080/registry/delete/1
 |===
 
 === Scan Registries

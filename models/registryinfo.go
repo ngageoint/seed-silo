@@ -55,7 +55,7 @@ func AddRegistry(db *sql.DB, r RegistryInfo) (int, error) {
 
 	id := -1
 	var id64 int64
-	if err != nil {
+	if err == nil {
 		id64, err = result.LastInsertId()
 		id = int(id64)
 	}
