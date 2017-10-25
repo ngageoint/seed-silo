@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/JohnPTobe/silo/models"
 	"github.com/ngageoint/seed-cli/util"
+	"github.com/ngageoint/seed-cli/objects"
 )
 
 func TestMain(m *testing.M) {
@@ -104,6 +106,36 @@ func TestAddRegistry(t *testing.T) {
 	}
 }
 
+func TestDeleteRegistry(t *testing.T) {
+	clearTable()
+
+	addRegistry()
+
+	payload := []byte(``)
+	req, _ := http.NewRequest("DELETE", "/registry/delete/1", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	req, _ = http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusNotFound, response.Code)
+
+	var m map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	errorStr := "No registry found with that ID"
+	if m["error"] != errorStr {
+		t.Errorf("Expected error to be '%s'. Got '%v'", m["error"])
+	}
+
+	req, _ = http.NewRequest("DELETE", "/registry/delete/test", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusBadRequest, response.Code)
+}
+
 func TestScanRegistry(t *testing.T) {
 	clearTable()
 
@@ -127,6 +159,75 @@ func TestScanRegistry(t *testing.T) {
 	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
 	if m[0] != testImage {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
+	}
+
+	req, _ = http.NewRequest("GET", "/registry/test/scan", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusBadRequest, response.Code)
+}
+
+func TestSearchImages(t *testing.T) {
+	clearTable()
+
+	addRegistry()
+
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	checkResponseCode(t, 202, response.Code)
+
+	req, _ = http.NewRequest("GET", "/images/search/latest", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	m := []models.Image{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+	m[0].Manifest = ""
+
+	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
+	if m[0] != testImage {
+		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
+	}
+
+	req, _ = http.NewRequest("GET", "/images/search/asdfasdf", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	if len(m) != 0 {
+		t.Errorf("Expected emtpy image list. Got %d results.", len(m))
+	}
+}
+
+func TestImageManifest(t *testing.T) {
+	clearTable()
+
+	addRegistry()
+
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	checkResponseCode(t, 202, response.Code)
+
+	req, _ = http.NewRequest("GET", "/images/1/manifest", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	m := objects.Seed{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	testManifest := objects.SeedFromManifestFile("seed.manifest.json")
+
+	mStr := fmt.Sprintf("%s", m)
+	testStr := fmt.Sprintf("%s", testManifest)
+	if mStr != testStr {
+		t.Errorf("Expected manifest to be %v. Got '%v'", testManifest, m)
 	}
 }
 
