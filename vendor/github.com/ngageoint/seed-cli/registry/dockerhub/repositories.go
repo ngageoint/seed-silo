@@ -42,7 +42,7 @@ func (registry *DockerHubRegistry) Repositories(user string) ([]string, error) {
 }
 
 //Tags Returns tags for a given user/organization and repository
-func (registry *DockerHubRegistry) Tags(repository, user string) ([]string, error) {
+func (registry *DockerHubRegistry) Tags(user, repository string) ([]string, error) {
 	url := registry.url("/v2/repositories/%s/%s/tags", user, repository)
 	tags := make([]string, 0, 10)
 	var err error //We create this here, otherwise url will be rescoped with :=

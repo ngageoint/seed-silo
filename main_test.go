@@ -1,19 +1,21 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
-	"net/http"
-	"net/http/httptest"
-	"encoding/json"
-	"bytes"
 	"github.com/JohnPTobe/silo/models"
+	"github.com/ngageoint/seed-cli/util"
 )
 
 func TestMain(m *testing.M) {
 	InitDB("./silo-test.db")
 
+	util.InitPrinter(true)
 	code := m.Run()
 
 	os.Remove("./silo-test.db")
@@ -25,7 +27,7 @@ func TestEmptyTable(t *testing.T) {
 	clearTable()
 
 	cases := []struct {
-		urlStr        string
+		urlStr string
 	}{
 		{"/registries"},
 		{"/images"},
@@ -48,8 +50,8 @@ func TestGetNonExistentItem(t *testing.T) {
 	clearTable()
 
 	cases := []struct {
-		urlStr        string
-		code int
+		urlStr   string
+		code     int
 		errorMsg string
 	}{
 		{"/registry/1/scan", 404, "No registry found with that ID"},
@@ -122,9 +124,9 @@ func TestScanRegistry(t *testing.T) {
 	json.Unmarshal(response.Body.Bytes(), &m)
 	m[0].Manifest = ""
 
-	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed", Registry: "docker.io", Org: "johnptobe"}
+	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
 	if m[0] != testImage {
-		t.Errorf("Expected image to be %v. Got '%v'", testImage, m)
+		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
 }
 
