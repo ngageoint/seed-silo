@@ -10,10 +10,67 @@ type Route struct {
 	Name        string
 	Method      string
 	Pattern     string
-	HandlerFunc http.HandlerFunc
 }
 
-type Routes []Route
+var routes = []Route{
+	Route{
+		"Index",
+		"GET",
+		"/",
+	},
+	Route{
+		"AddRegistry",
+		"POST",
+		"/registry/add",
+	},
+	Route{
+		"DeleteRegistry",
+		"DELETE",
+		"/registry/delete/{id}",
+	},
+	Route{
+		"ListRegistries",
+		"GET",
+		"/registries",
+	},
+	Route{
+		"ScanRegistries",
+		"GET",
+		"/registries/scan",
+	},
+	Route{
+		"ScanRegistry",
+		"GET",
+		"/registry/{id}/scan",
+	},
+	Route{
+		"ListImages",
+		"GET",
+		"/images",
+	},
+	Route{
+		"SearchImages",
+		"GET",
+		"/images/search/{query}",
+	},
+	Route{
+		"ImageManifest",
+		"GET",
+		"/images/{id}/manifest",
+	},
+}
+
+var handler = map[string]http.HandlerFunc{
+"Index": Index,
+"AddRegistry": AddRegistry,
+"DeleteRegistry": DeleteRegistry,
+"ListRegistries": ListRegistries,
+"ScanRegistries": ScanRegistries,
+"ScanRegistry": ScanRegistry,
+"ListImages": ListImages,
+"SearchImages": SearchImages,
+"ImageManifest": ImageManifest,
+}
 
 func NewRouter() *mux.Router {
 
@@ -23,65 +80,13 @@ func NewRouter() *mux.Router {
 			Methods(route.Method).
 			Path(route.Pattern).
 			Name(route.Name).
-			Handler(route.HandlerFunc)
+			Handler(handler[route.Name])
 	}
 
 	return router
 }
 
-var routes = Routes{
-	Route{
-		"Index",
-		"GET",
-		"/",
-		Index,
-	},
-	Route{
-		"AddRegistry",
-		"POST",
-		"/registry/add",
-		AddRegistry,
-	},
-	Route{
-		"DeleteRegistry",
-		"DELETE",
-		"/registry/delete/{id}",
-		DeleteRegistry,
-	},
-	Route{
-		"ListRegistries",
-		"GET",
-		"/registries",
-		ListRegistries,
-	},
-	Route{
-		"ScanRegistries",
-		"GET",
-		"/registries/scan",
-		ScanRegistries,
-	},
-	Route{
-		"ScanRegistry",
-		"GET",
-		"/registry/{id}/scan",
-		ScanRegistry,
-	},
-	Route{
-		"ListImages",
-		"GET",
-		"/images",
-		ListImages,
-	},
-	Route{
-		"SearchImages",
-		"GET",
-		"/images/search/{query}",
-		SearchImages,
-	},
-	Route{
-		"ImageManifest",
-		"GET",
-		"/images/{id}/manifest",
-		ImageManifest,
-	},
+
+func GetRoutes() []Route {
+	return routes
 }

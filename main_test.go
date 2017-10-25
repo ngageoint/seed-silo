@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"encoding/json"
 	"bytes"
-	"fmt"
+	"github.com/JohnPTobe/silo/models"
 )
 
 func TestMain(m *testing.M) {
@@ -90,7 +90,7 @@ func TestAddRegistry(t *testing.T) {
 	}
 
 	if m["Name"] != "dockerhub" {
-		t.Errorf("Expected product name to be 'dockerhub'. Got '%v'", m["Name"])
+		t.Errorf("Expected registry name to be 'dockerhub'. Got '%v'", m["Name"])
 	}
 
 	if m["Url"] != "https://hub.docker.com" {
@@ -99,6 +99,32 @@ func TestAddRegistry(t *testing.T) {
 
 	if m["Org"] != "johnptobe" {
 		t.Errorf("Expected org to be 'johnptobe'. Got '%v'", m["Org"])
+	}
+}
+
+func TestScanRegistry(t *testing.T) {
+	clearTable()
+
+	addRegistry()
+
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	checkResponseCode(t, 202, response.Code)
+
+	req, _ = http.NewRequest("GET", "/images", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	m := []models.Image{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+	m[0].Manifest = ""
+
+	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed", Registry: "docker.io", Org: "johnptobe"}
+	if m[0] != testImage {
+		t.Errorf("Expected image to be %v. Got '%v'", testImage, m)
 	}
 }
 
@@ -120,4 +146,11 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 	if expected != actual {
 		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
 	}
+}
+
+func addRegistry() {
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
+
+	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
+	executeRequest(req)
 }

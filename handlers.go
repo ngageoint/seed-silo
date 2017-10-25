@@ -18,48 +18,7 @@ import (
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Welcome!\n")
-	var myMap = make(map[string]interface{})
-	rows, err := db.Query("SELECT * FROM RegistryInfo")
-	defer rows.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	colNames, err := rows.Columns()
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, col := range colNames {
-		fmt.Fprint(w, col, "\n")
-	}
-	cols := make([]interface{}, len(colNames))
-	colPtrs := make([]interface{}, len(colNames))
-	for i := 0; i < len(colNames); i++ {
-		colPtrs[i] = &cols[i]
-	}
-	for rows.Next() {
-		err = rows.Scan(colPtrs...)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for i, col := range cols {
-			myMap[colNames[i]] = col
-		}
-		// Do something with the map
-		for key, val := range myMap {
-			fmt.Fprint(w, "Key: ", key, " Value: ", val, "\n")
-		}
-	}
-	rows.Close()
-
-	rows, err = db.Query("SELECT * FROM Image")
-	for rows.Next() {
-		img := models.Image{}
-		rows.Scan(&img.ID, &img.Name, &img.Registry, &img.Org, &img.Manifest)
-		fmt.Fprintln(w, img)
-	}
-	rows.Close()
-	fmt.Fprint(w, "Done!\n")
+	respondWithJSON(w, http.StatusOK, GetRoutes())
 }
 
 func AddRegistry(w http.ResponseWriter, r *http.Request) {
