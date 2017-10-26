@@ -1,11 +1,5 @@
 package main
 
-import (
-	"net/http"
-
-	"github.com/gorilla/mux"
-)
-
 type Route struct {
 	Name        string
 	Method      string
@@ -59,33 +53,6 @@ var routes = []Route{
 		"/images/{id}/manifest",
 	},
 }
-
-var handler = map[string]http.HandlerFunc{
-"Index": Index,
-"AddRegistry": AddRegistry,
-"DeleteRegistry": DeleteRegistry,
-"ListRegistries": ListRegistries,
-"ScanRegistries": ScanRegistries,
-"ScanRegistry": ScanRegistry,
-"ListImages": ListImages,
-"SearchImages": SearchImages,
-"ImageManifest": ImageManifest,
-}
-
-func NewRouter() *mux.Router {
-
-	router := mux.NewRouter().StrictSlash(true)
-	for _, route := range routes {
-		router.
-			Methods(route.Method).
-			Path(route.Pattern).
-			Name(route.Name).
-			Handler(handler[route.Name])
-	}
-
-	return router
-}
-
 
 func GetRoutes() []Route {
 	return routes
