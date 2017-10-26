@@ -21,6 +21,28 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, GetRoutes())
 }
 
+func Registry(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Registry ID")
+		return
+	}
+
+	reg, err := models.GetRegistry(db, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			respondWithError(w, http.StatusNotFound, "No registry found with that ID")
+			return
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, reg)
+}
+
 func AddRegistry(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
@@ -195,6 +217,28 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, results)
+}
+
+func Image(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Image ID")
+		return
+	}
+
+	img, err := models.ReadImage(db, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			respondWithError(w, http.StatusNotFound, "No image found with that ID")
+			return
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, img)
 }
 
 func ImageManifest(w http.ResponseWriter, r *http.Request) {

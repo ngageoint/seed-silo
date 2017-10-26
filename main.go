@@ -23,7 +23,7 @@ func main() {
 	defer db.Close()
 
 	if err != nil {
-		log.Fatal("Error initializing router: %s\n", err.Error())
+		log.Fatalf("Error initializing router: %v\n", err.Error())
 		log.Fatalln("quitting")
 		return
 	}

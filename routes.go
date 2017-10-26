@@ -13,6 +13,11 @@ var routes = []Route{
 		"/",
 	},
 	Route{
+		"Registry",
+		"GET",
+		"/registry/{id}",
+	},
+	Route{
 		"AddRegistry",
 		"POST",
 		"/registry/add",
@@ -46,6 +51,11 @@ var routes = []Route{
 		"SearchImages",
 		"GET",
 		"/images/search/{query}",
+	},
+	Route{
+		"Image",
+		"GET",
+		"/images/{id}",
 	},
 	Route{
 		"ImageManifest",

@@ -10,6 +10,7 @@ import (
 
 var handler = map[string]http.HandlerFunc{
 	"Index": Index,
+	"Registry": Registry,
 	"AddRegistry": AddRegistry,
 	"DeleteRegistry": DeleteRegistry,
 	"ListRegistries": ListRegistries,
@@ -17,6 +18,7 @@ var handler = map[string]http.HandlerFunc{
 	"ScanRegistry": ScanRegistry,
 	"ListImages": ListImages,
 	"SearchImages": SearchImages,
+	"Image": Image,
 	"ImageManifest": ImageManifest,
 }
 
@@ -35,8 +37,8 @@ func NewRouter() (*mux.Router, error) {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {
 		if handler[route.Name] == nil {
-			fmt.Println("Unable to find handler for route %s", route.Name)
-			err = errors.New("Unable to find handler for route")
+			msg := fmt.Sprintf("Unable to find handler for route %s", route.Name)
+			err = errors.New(msg)
 			continue
 		}
 
