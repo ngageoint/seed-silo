@@ -8,12 +8,58 @@ allows users to scan one or more repositories for seed images and then search th
 by keywords.  Frameworks such as Scale can use these endpoints to assist users in finding algorithm images and creating
 jobs out of them.
 
-== Registry
+== Install
+
+To build/install the SILO webapp on linux:
+
+----
+Install go and docker packages
+yum install go
+yum install docker
+go get github.com/JohnPTobe/silo
+~/go/src/github.com/JohnPTobe/silo/install-silo.sh
+----
+
+== Usage
+
+=== Registry
 
 Registries can be added, deleted and scanned. A registry consists of a name, url, organization (optional), username (optional),
 and password (optional).
 
-=== Add Registry
+==== Get Registry
+
+Retrieves a registry
+
+[cols="h,5a"]
+|===
+| URL
+| /registry/{id}
+
+| Method
+| GET
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: {"ID":1,"Name":"dockerhub","Url":"https://hub.docker.com","Org":"johnptobe","Username":"","Password":""}
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid ID" } +
+        Code: 404 File not found +
+        Content: { error : "No registry found with that ID" }
+
+|Sample Call
+| curl -X "GET" http://localhost:8080/registry/1
+|===
+
+==== Add Registry
 
 Adds a registry to the list of registries to be scanned.  An error will be returned and the registry won't be added if
 the daemon is unable to connect to the registry.
@@ -49,7 +95,7 @@ the daemon is unable to connect to the registry.
 | curl -H "Content-Type: application/json" -d '{"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}' http://localhost:8080/registry/add
 |===
 
-=== Delete Registry
+==== Delete Registry
 
 Removes a registry from the list of registries along with all images associated with that registry.
 
@@ -73,13 +119,13 @@ Removes a registry from the list of registries along with all images associated 
 
 |Error Response
 |       Code: 400 Bad Request +
-        Content: { error : "Invalid Registry ID" }
+        Content: { error : "Invalid ID" }
 
 |Sample Call
 | curl -X "DELETE" http://localhost:8080/registry/delete/1
 |===
 
-=== Scan Registries
+==== Scan Registries
 
 Removes all existing image entries, scans all registries for seed images and adds them to the database.
 
@@ -108,7 +154,7 @@ Removes all existing image entries, scans all registries for seed images and add
 | curl "https://localhost:5000/registries/scan"
 |===
 
-=== Scan Registry
+==== Scan Registry
 
 Removes all existing image entries, scans all registries for seed images and adds them to the database.
 
@@ -137,7 +183,7 @@ Removes all existing image entries, scans all registries for seed images and add
 | curl "https://localhost:5000/registry/1/scan"
 |===
 
-=== List Registries
+==== List Registries
 
 Retrieves all of the registries that have been successfully added
 
@@ -175,12 +221,12 @@ Retrieves all of the registries that have been successfully added
 | curl "https://localhost:5000/registries"
 |===
 
-== Image
+=== Image
 
 Images are added/removed by scanning registries. An image consists of a name, registry, organization (optional), and the
 Seed manifest.
 
-=== List Images
+==== List Images
 
 Retrieves all of the Seed images that have been scanned from registries
 
@@ -226,7 +272,7 @@ Retrieves all of the Seed images that have been scanned from registries
 | curl "https://localhost:5000/images"
 |===
 
-=== Search Images
+==== Search Images
 
 Searches the Seed images that have been scanned from registries and returns images matching the given query.  Images are
 returned if the name, organization or manifest strings match the given query.
@@ -273,7 +319,47 @@ returned if the name, organization or manifest strings match the given query.
 | curl "https://localhost:5000/images/search/test"
 |===
 
-=== Image Manifest
+==== Get Image
+
+Retrieves an image
+
+[cols="h,5a"]
+|===
+| URL
+| /images/{id}
+
+| Method
+| GET
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: +
+                   { +
+                     "ID": 3, +
+                     "RegistryId": 1, +
+                     "Name": "my-job-0.1.0-seed:0.1.0", +
+                     "Registry": "localhost:5000", +
+                     "Org": "", +
+                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
+                   }
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid ID" } +
+        Code: 404 File not found +
+        Content: { error : "No image found with that ID" }
+
+|Sample Call
+| curl -X "GET" http://localhost:8080/images/1
+|===
+
+==== Image Manifest
 
 Returns the Seed manifest json for the given image id.
 
@@ -296,7 +382,10 @@ Returns the Seed manifest json for the given image id.
         Content: link:seed.manifest.json[sample manifest]
 
 |Error Response
-|       None
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid ID" } +
+        Code: 404 File not found +
+        Content: { error : "No image found with that ID" }
 
 |Sample Call
 | curl "https://localhost:5000/images/1/manifest"

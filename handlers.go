@@ -25,7 +25,7 @@ func Registry(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid Registry ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
@@ -78,7 +78,7 @@ func DeleteRegistry(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid Registry ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
@@ -94,7 +94,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid Registry ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
@@ -223,7 +223,7 @@ func Image(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid Image ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
@@ -245,7 +245,7 @@ func ImageManifest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid Registry ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
