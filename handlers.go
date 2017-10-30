@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -194,26 +195,82 @@ func ListRegistries(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, list)
 }
 
-//TODO: Enhance search with multiple keywords, ranking results
+type RankedResult struct {
+	Score int
+	Image models.Image
+}
+
+type ByScore []RankedResult
+
+func (s ByScore) Len() int {
+	return len(s)
+}
+func (s ByScore) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s ByScore) Less(i, j int) bool {
+	return s[i].Score > s[j].Score
+}
+
 func SearchImages(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	query := vars["query"]
 
+	terms := strings.Split(query, "+")
+
 	images := models.ReadImages(db)
-	results := []models.Image{}
+
+	rankedResults := []RankedResult{}
 	for _, img := range images {
-		if strings.Contains(img.Name, query) {
-			results = append(results, img)
-			continue
+		score := 0
+		for _, term := range terms {
+			if strings.Contains(img.Name, term) {
+				score += 10
+			}
+			if strings.Contains(img.Org, term) {
+				score += 10
+			}
+			seed := &objects.Seed{}
+
+			err = json.Unmarshal([]byte(img.Manifest), &seed)
+			if err != nil {
+				log.Printf("Error unmarshalling seed manifest for %s: %s \n", img.Name, err.Error())
+			}
+
+			if strings.Contains(fmt.Sprintf("%s", seed), term) {
+				score += 1
+			}
+
+			if strings.Contains(seed.Job.Name, term) {
+				score += 10
+			}
+			if strings.Contains(seed.Job.Title, term) {
+				score += 5
+			}
+
+			if strings.Contains(seed.Job.Description, term) {
+				score += 5
+			}
+
+			if strings.Contains(fmt.Sprintf("%s", seed.Job.Tags), term) {
+				score += 10
+			}
+
+			if strings.Contains(fmt.Sprintf("%s", seed.Job.Maintainer), term) {
+				score += 5
+			}
+
 		}
-		if strings.Contains(img.Org, query) {
-			results = append(results, img)
-			continue
+		if score > 0 {
+			rankedResults = append(rankedResults, RankedResult{Score: score, Image: img})
 		}
-		if strings.Contains(img.Manifest, query) {
-			results = append(results, img)
-			continue
-		}
+	}
+
+	sort.Sort(ByScore(rankedResults))
+
+	results := []models.Image{}
+	for _, res := range rankedResults {
+		results = append(results, res.Image)
 	}
 
 	respondWithJSON(w, http.StatusOK, results)
