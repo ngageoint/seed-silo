@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/JohnPTobe/silo/models"
+	"github.com/ngageoint/seed-silo/models"
 	"github.com/ngageoint/seed-cli/util"
 	"github.com/ngageoint/seed-cli/objects"
 	"log"
@@ -22,6 +22,7 @@ func TestMain(m *testing.M) {
 	util.InitPrinter(true)
 	log.SetFlags(0)
 	log.SetOutput(ioutil.Discard)
+
 	code := m.Run()
 
 	os.Remove("./silo-test.db")

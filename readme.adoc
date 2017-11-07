@@ -1,7 +1,7 @@
 = SILO API
 
 image:https://badges.gitter.im/ngageoint/seed.svg[link="https://gitter.im/ngageoint/seed?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"]
-image:https://travis-ci.org/johnptobe/seed-discovery.svg?branch=master[link="https://travis-ci.org/johnptobe/seed-discovery"]
+image:https://travis-ci.org/ngageoint/seed-silo.svg?branch=master[link="https://travis-ci.org/ngageoing/seed-silo"]
 
 SILO (Seed Images Location Operation) is a REST API provided by the Seed team for discovering Seed images.  The API
 allows users to scan one or more repositories for seed images and then search the resulting images and their manifests
@@ -16,8 +16,8 @@ To build/install the SILO webapp on linux:
 Install go and docker packages
 yum install go
 yum install docker
-go get github.com/JohnPTobe/silo
-~/go/src/github.com/JohnPTobe/silo/install-silo.sh
+go get github.com/ngageoint/seed-silo
+~/go/src/github.com/ngageoint/seed-silo/install-silo.sh
 ----
 
 == Usage

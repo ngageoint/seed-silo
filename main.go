@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"database/sql"
 
-	"github.com/JohnPTobe/silo/models"
 	"github.com/gorilla/mux"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -28,8 +27,7 @@ func main() {
 		return
 	}
 
-	models.CreateImageTable(db)
-	models.CreateRegistryTable(db)
+
 
 	log.SetOutput(&lumberjack.Logger{
 		Filename:   "/var/log/silo/silo.log",
