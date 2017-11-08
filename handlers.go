@@ -12,10 +12,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/JohnPTobe/silo/models"
+	"github.com/ngageoint/seed-silo/models"
 	"github.com/gorilla/mux"
-	"github.com/ngageoint/seed-cli/registry"
-	"github.com/ngageoint/seed-cli/objects"
+	"github.com/JohnPTobe/seed-common/registry"
+	"github.com/JohnPTobe/seed-common/objects"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
