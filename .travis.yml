@@ -6,7 +6,7 @@ services:
   - docker
 
 script:
-  - go get -t ./...
+  - go get github.com/JohnPTobe/seed-common
   - ./build-silo.sh
   - go test .
 
