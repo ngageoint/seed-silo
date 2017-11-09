@@ -6,11 +6,7 @@ services:
   - docker
 
 install:
-  - go get github.com/JohnPTobe/seed-common/constants
-  - go get github.com/JohnPTobe/seed-common/objects
-  - go get github.com/JohnPTobe/seed-common/registry
-  - go get github.com/JohnPTobe/seed-common/util
-  - go get github.com/JohnPTobe/seed-common/vendor/github.com/heroku/docker-registry-client
+  - go get github.com/JohnPTobe/seed-common/...
 
 script:
   - ./build-silo.sh
