@@ -5,8 +5,10 @@ language: go
 services:
   - docker
 
-script:
+install:
   - go get github.com/JohnPTobe/seed-common
+  
+script:
   - ./build-silo.sh
   - go test .
 
