@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/ngageoint/seed-silo/models"
-	"github.com/ngageoint/seed-cli/util"
-	"github.com/ngageoint/seed-cli/objects"
+	"github.com/JohnPTobe/seed-common/util"
+	"github.com/JohnPTobe/seed-common/objects"
 	"log"
 	"io/ioutil"
 )
