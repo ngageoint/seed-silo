@@ -37,7 +37,7 @@ func main() {
 		Compress:   false, // disabled by default
 	})
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":80", router))
 }
 
 func GetDb() *sql.DB {
