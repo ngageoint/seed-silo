@@ -2,7 +2,10 @@ package models
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
+
+	"github.com/JohnPTobe/seed-common/objects"
 )
 
 type Image struct {
@@ -12,6 +15,19 @@ type Image struct {
 	Registry   string `db:registry`
 	Org        string `db:org`
 	Manifest   string `db:manifest`
+	Seed       objects.Seed
+}
+
+type SimpleImage struct {
+	ID             int
+	RegistryId     int
+	Name           string
+	Registry       string
+	Org            string
+	JobName        string
+	JobVersion     string
+	PackageVersion string
+	Description    string
 }
 
 func CreateImageTable(db *sql.DB) {
@@ -81,6 +97,53 @@ func ReadImages(db *sql.DB) []Image {
 		if err2 != nil {
 			panic(err2)
 		}
+
+		err2 = json.Unmarshal([]byte(item.Manifest), &item.Seed)
+		if err2 != nil {
+			log.Printf("Error unmarshalling seed manifest for %s: %s \n", item.Name, err2.Error())
+		}
+
+		result = append(result, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return result
+}
+
+func ReadSimpleImages(db *sql.DB) []SimpleImage {
+	sql_readall := `
+	SELECT * FROM Image
+	ORDER BY id ASC
+	`
+
+	rows, err := db.Query(sql_readall)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var result []SimpleImage
+	for rows.Next() {
+		item := SimpleImage{}
+		var manifest string
+		err2 := rows.Scan(&item.ID, &item.RegistryId, &item.Name, &item.Registry, &item.Org, &manifest)
+		if err2 != nil {
+			panic(err2)
+		}
+
+		var seed objects.Seed
+		err2 = json.Unmarshal([]byte(manifest), &seed)
+		if err2 != nil {
+			log.Printf("Error unmarshalling seed manifest for %s: %s \n", item.Name, err2.Error())
+		}
+
+		item.JobName = seed.Job.Name
+		item.JobVersion = seed.Job.JobVersion
+		item.PackageVersion = seed.Job.PackageVersion
+		item.Description = seed.Job.Description
+
 		result = append(result, item)
 	}
 
@@ -95,6 +158,14 @@ func ReadImage(db *sql.DB, id int) (Image, error) {
 
 	var result Image
 	err := row.Scan(&result.ID, &result.RegistryId, &result.Name, &result.Registry, &result.Org, &result.Manifest)
+
+	if err == nil {
+		err = json.Unmarshal([]byte(result.Manifest), &result.Seed)
+		if err != nil {
+			log.Printf("Error unmarshalling seed manifest for %s: %s \n", result.Name, err.Error())
+			err = nil
+		}
+	}
 
 	return result, err
 }

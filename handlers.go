@@ -15,7 +15,6 @@ import (
 	"github.com/ngageoint/seed-silo/models"
 	"github.com/gorilla/mux"
 	"github.com/JohnPTobe/seed-common/registry"
-	"github.com/JohnPTobe/seed-common/objects"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -175,8 +174,8 @@ func Scan(w http.ResponseWriter, r *http.Request, registries []models.RegistryIn
 }
 
 func ListImages(w http.ResponseWriter, r *http.Request) {
-	imageList := []models.Image{}
-	images := models.ReadImages(db)
+	imageList := []models.SimpleImage{}
+	images := models.ReadSimpleImages(db)
 	imageList = append(imageList, images...)
 
 	respondWithJSON(w, http.StatusOK, imageList)
@@ -233,14 +232,9 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 			if strings.Contains(img.Org, term) {
 				score += 10
 			}
-			seed := &objects.Seed{}
+			seed := img.Seed
 
-			err = json.Unmarshal([]byte(img.Manifest), &seed)
-			if err != nil {
-				log.Printf("Error unmarshalling seed manifest for %s: %s \n", img.Name, err.Error())
-			}
-
-			if strings.Contains(fmt.Sprintf("%s", seed), term) {
+			if strings.Contains(fmt.Sprintf("%s", img.Seed), term) {
 				score += 1
 			}
 
@@ -321,14 +315,7 @@ func ImageManifest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	seed := &objects.Seed{}
-
-	err = json.Unmarshal([]byte(image.Manifest), &seed)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-	}
-
-	respondWithJSON(w, http.StatusOK, seed)
+	respondWithJSON(w, http.StatusOK, image.Seed)
 }
 
 func checkError(err error, url, username, password string) string {

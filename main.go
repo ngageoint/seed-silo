@@ -15,7 +15,7 @@ var router *mux.Router
 var err error
 
 func init() {
-	db = InitDB("./seed-silo.db")
+	db = InitDB("/usr/silo/seed-silo.db")
 	router, err = NewRouter()
 }
 
