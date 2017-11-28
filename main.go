@@ -14,12 +14,9 @@ var db *sql.DB
 var router *mux.Router
 var err error
 
-func init() {
+func main() {
 	db = InitDB("/usr/silo/seed-silo.db")
 	router, err = NewRouter()
-}
-
-func main() {
 	util.InitPrinter(util.PrintLog)
 	defer db.Close()
 

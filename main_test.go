@@ -17,7 +17,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	InitDB("./silo-test.db")
+	db = InitDB("./silo-test.db")
+	router, err = NewRouter()
 
 	util.InitPrinter(util.PrintErr)
 	log.SetFlags(0)
