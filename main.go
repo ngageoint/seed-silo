@@ -1,10 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
-	"database/sql"
 
+	"github.com/JohnPTobe/seed-common/util"
 	"github.com/gorilla/mux"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -19,6 +20,7 @@ func init() {
 }
 
 func main() {
+	util.InitPrinter(util.PrintLog)
 	defer db.Close()
 
 	if err != nil {
@@ -27,17 +29,15 @@ func main() {
 		return
 	}
 
-
-
 	log.SetOutput(&lumberjack.Logger{
-		Filename:   "/var/log/silo/silo.log",
+		Filename:   "/usr/silo/silo.log",
 		MaxSize:    500, // megabytes
 		MaxBackups: 3,
-		MaxAge:     28, //days
+		MaxAge:     28,    //days
 		Compress:   false, // disabled by default
 	})
 
-	log.Fatal(http.ListenAndServe(":80", router))
+	log.Fatal(http.ListenAndServe(":9000", router))
 }
 
 func GetDb() *sql.DB {

@@ -19,7 +19,7 @@ import (
 func TestMain(m *testing.M) {
 	InitDB("./silo-test.db")
 
-	util.InitPrinter(true)
+	util.InitPrinter(util.PrintErr)
 	log.SetFlags(0)
 	log.SetOutput(ioutil.Discard)
 
