@@ -62,6 +62,16 @@ var routes = []Route{
 		"GET",
 		"/images/{id}/manifest",
 	},
+	Route{
+		"Login",
+		"POST",
+		"/login",
+	},
+	Route{
+		"AddUser",
+		"POST",
+		"/user/add",
+	},
 }
 
 func GetRoutes() []Route {

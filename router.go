@@ -14,12 +14,14 @@ var handler = map[string]http.HandlerFunc{
 	"AddRegistry": AddRegistry,
 	"DeleteRegistry": DeleteRegistry,
 	"ListRegistries": ListRegistries,
-	"ScanRegistries": ScanRegistries,
+	"ScanRegistries": Validate(ScanRegistries),
 	"ScanRegistry": ScanRegistry,
 	"ListImages": ListImages,
 	"SearchImages": SearchImages,
 	"Image": Image,
 	"ImageManifest": ImageManifest,
+	"Login": Login,
+	"AddUser": AddUser,
 }
 
 func NewRouter() (*mux.Router, error) {

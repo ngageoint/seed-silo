@@ -13,8 +13,11 @@ import (
 	"strings"
 
 	"github.com/ngageoint/seed-silo/models"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/JohnPTobe/seed-common/registry"
+	"github.com/JohnPTobe/seed-common/util"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +142,7 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set("Content-Type", "application/txt; charset=UTF-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(w, "Scanning registries...")
@@ -316,6 +319,118 @@ func ImageManifest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, image.Seed)
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	//get user provided login and validate it
+	var user models.User
+	_ = json.NewDecoder(r.Body).Decode(&user)
+
+	valid, err := models.ValidateUser(db, user.Username, user.Password)
+	if !valid || err != nil{
+		respondWithError(w, http.StatusUnauthorized, "Invalid login")
+	}
+
+	//get the user object from db with the role attribute and wrap it in a token
+	user, _ = models.GetUserByName(db, user.Username)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": user.Username,
+		"role": user.Role,
+	})
+
+	tokenString, error := token.SignedString([]byte(TokenSecret))
+	if error != nil {
+		util.PrintUtil("Error signing token: %s\n", error.Error())
+		respondWithError(w, http.StatusInternalServerError, "Error creating token")
+	}
+
+	respondWithJSON(w, http.StatusOK, models.JwtToken{Token: tokenString})
+}
+
+func Validate(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		authorizationHeader := req.Header.Get("authorization")
+		if authorizationHeader != "" {
+			bearerToken := strings.Split(authorizationHeader, " ")
+			if len(bearerToken) == 2 {
+				token, error := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+						return nil, fmt.Errorf("There was an error")
+					}
+					return []byte(TokenSecret), nil
+				})
+				if error != nil {
+					json.NewEncoder(w).Encode(models.Exception{Message: error.Error()})
+					return
+				}
+				if token.Valid {
+					context.Set(req, "decoded", token.Claims)
+					next(w, req)
+				} else {
+					json.NewEncoder(w).Encode(models.Exception{Message: "Invalid authorization token"})
+				}
+			}
+		} else {
+			json.NewEncoder(w).Encode(models.Exception{Message: "An authorization header is required"})
+		}
+	})
+}
+
+func ValidateAdmin(next http.HandlerFunc) http.HandlerFunc {
+	
+}
+
+func AddUser(w http.ResponseWriter, r *http.Request) {
+	decoded := context.Get(r, "decoded")
+	var admin models.User
+	mapstructure.Decode(decoded.(jwt.MapClaims), &admin)
+
+	if admin.Role != models.AdminRole {
+		respondWithError(w, http.StatusUnauthorized, "Adding users requires admin role")
+	}
+
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+	if err := r.Body.Close(); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+	var user models.User
+	if err := json.Unmarshal(body, &user); err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
+	}
+
+	id, err := models.AddUser(db, user)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+	user.ID = id
+	respondWithJSON(w, http.StatusCreated, user)
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	decoded := context.Get(r, "decoded")
+	var admin models.User
+	mapstructure.Decode(decoded.(jwt.MapClaims), &admin)
+
+	if admin.Role != models.AdminRole {
+		respondWithError(w, http.StatusUnauthorized, "Deleting users requires admin role")
+	}
+
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	if err := models.DeleteRegistry(db, id); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func checkError(err error, url, username, password string) string {
