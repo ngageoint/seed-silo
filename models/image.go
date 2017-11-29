@@ -25,6 +25,7 @@ type SimpleImage struct {
 	Registry       string
 	Org            string
 	JobName        string
+	Title          string
 	JobVersion     string
 	PackageVersion string
 	Description    string
@@ -140,6 +141,7 @@ func ReadSimpleImages(db *sql.DB) []SimpleImage {
 		}
 
 		item.JobName = seed.Job.Name
+		item.Title = seed.Job.Title
 		item.JobVersion = seed.Job.JobVersion
 		item.PackageVersion = seed.Job.PackageVersion
 		item.Description = seed.Job.Description
