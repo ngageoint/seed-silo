@@ -72,6 +72,16 @@ var routes = []Route{
 		"POST",
 		"/user/add",
 	},
+	Route{
+		"DeleteUser",
+		"DELETE",
+		"/user/delete/{id}",
+	},
+	Route{
+		"ListUsers",
+		"GET",
+		"/users",
+	},
 }
 
 func GetRoutes() []Route {

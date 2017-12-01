@@ -11,9 +11,11 @@ type RegistryInfo struct {
 	Name     string `db:name`
 	Url      string `db:url`
 	Org      string `db:org`
-	Username string `json:"-"`
-	Password string `json:"-"`
+	Username string `db:username`
+	Password string `db:password`
 }
+
+//TODO: Add display registry
 
 func CreateRegistryTable(db *sql.DB) {
 	// create table if not exists

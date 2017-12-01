@@ -16,8 +16,10 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 	"github.com/JohnPTobe/seed-common/registry"
 	"github.com/JohnPTobe/seed-common/util"
+	"os/user"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -185,10 +187,6 @@ func ListImages(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListRegistries(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.WriteHeader(http.StatusOK)
-
 	registries, err := models.DisplayRegistries(db)
 
 	if err != nil {
@@ -323,8 +321,18 @@ func ImageManifest(w http.ResponseWriter, r *http.Request) {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	//get user provided login and validate it
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+	if err := r.Body.Close(); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+
 	var user models.User
-	_ = json.NewDecoder(r.Body).Decode(&user)
+	if err := json.Unmarshal(body, &user); err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
+	}
 
 	valid, err := models.ValidateUser(db, user.Username, user.Password)
 	if !valid || err != nil{
@@ -347,7 +355,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, models.JwtToken{Token: tokenString})
 }
 
-func Validate(next http.HandlerFunc) http.HandlerFunc {
+func Validate(roles []string, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		authorizationHeader := req.Header.Get("authorization")
 		if authorizationHeader != "" {
@@ -365,9 +373,16 @@ func Validate(next http.HandlerFunc) http.HandlerFunc {
 				}
 				if token.Valid {
 					context.Set(req, "decoded", token.Claims)
-					next(w, req)
+					var user models.User
+					mapstructure.Decode(token.Claims, &user)
+					fmt.Printf("user: %s\n", user.Username)
+					if util.ContainsString(roles, user.Role) {
+						next(w, req)
+					} else {
+						respondWithError(w, http.StatusUnauthorized, "User does not have permission to perform this action")
+					}
 				} else {
-					json.NewEncoder(w).Encode(models.Exception{Message: "Invalid authorization token"})
+					respondWithError(w, http.StatusUnauthorized, "Invalid authorization token")
 				}
 			}
 		} else {
@@ -376,19 +391,7 @@ func Validate(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func ValidateAdmin(next http.HandlerFunc) http.HandlerFunc {
-	
-}
-
 func AddUser(w http.ResponseWriter, r *http.Request) {
-	decoded := context.Get(r, "decoded")
-	var admin models.User
-	mapstructure.Decode(decoded.(jwt.MapClaims), &admin)
-
-	if admin.Role != models.AdminRole {
-		respondWithError(w, http.StatusUnauthorized, "Adding users requires admin role")
-	}
-
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -410,14 +413,6 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	decoded := context.Get(r, "decoded")
-	var admin models.User
-	mapstructure.Decode(decoded.(jwt.MapClaims), &admin)
-
-	if admin.Role != models.AdminRole {
-		respondWithError(w, http.StatusUnauthorized, "Deleting users requires admin role")
-	}
-
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -425,12 +420,24 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := models.DeleteRegistry(db, id); err != nil {
+	if err := models.DeleteUser(db, id); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
+}
+
+func ListUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := models.DisplayUsers(db)
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+	}
+
+	list := []models.User{}
+	list = append(list, users...)
+	respondWithJSON(w, http.StatusOK, list)
 }
 
 func checkError(err error, url, username, password string) string {

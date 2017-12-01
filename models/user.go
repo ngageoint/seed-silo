@@ -10,9 +10,11 @@ import (
 type User struct {
 	ID       int    `db:id`
 	Username string `json:"username"`
-	Password string `json:"-"`
+	Password string `json:"password"`
 	Role     string `json:"role"`
 }
+
+//TODO: Add display user
 
 type JwtToken struct {
 	Token string `json:"token"`
