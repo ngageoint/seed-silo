@@ -19,7 +19,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/JohnPTobe/seed-common/registry"
 	"github.com/JohnPTobe/seed-common/util"
-	"os/user"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +192,7 @@ func ListRegistries(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 
-	list := []models.RegistryInfo{}
+	list := []models.DisplayRegistry{}
 	list = append(list, registries...)
 	respondWithJSON(w, http.StatusOK, list)
 }
@@ -340,10 +339,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//get the user object from db with the role attribute and wrap it in a token
-	user, _ = models.GetUserByName(db, user.Username)
+	displayuser, _ := models.GetUserByName(db, user.Username)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": user.Username,
-		"role": user.Role,
+		"username": displayuser.Username,
+		"role": displayuser.Role,
 	})
 
 	tokenString, error := token.SignedString([]byte(TokenSecret))
@@ -435,7 +434,7 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 
-	list := []models.User{}
+	list := []models.DisplayUser{}
 	list = append(list, users...)
 	respondWithJSON(w, http.StatusOK, list)
 }

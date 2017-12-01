@@ -14,7 +14,11 @@ type User struct {
 	Role     string `json:"role"`
 }
 
-//TODO: Add display user
+type DisplayUser struct {
+	ID       int    `db:id`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+}
 
 type JwtToken struct {
 	Token string `json:"token"`
@@ -42,12 +46,15 @@ func CreateUser(db *sql.DB) {
 		panic(err)
 	}
 
-	//add default admin
-	var admin = User{Username: "admin", Password: "spicy-pickles17!", Role: AdminRole}
-	_, err = AddUser(db, admin)
+	users, _ := GetUsers(db)
+	if len(users) == 0 {
+		//add default admin
+		var admin= User{Username: "admin", Password: "spicy-pickles17!", Role: AdminRole}
+		_, err = AddUser(db, admin)
 
-	if err != nil {
-		panic(err)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -87,7 +94,7 @@ func DeleteUser(db *sql.DB, id int) error {
 }
 
 //Get list of users without username for display
-func DisplayUsers(db *sql.DB) ([]User, error) {
+func DisplayUsers(db *sql.DB) ([]DisplayUser, error) {
 	sql_readall := `
 	SELECT id, username, role FROM User
 	ORDER BY id ASC
@@ -99,9 +106,9 @@ func DisplayUsers(db *sql.DB) ([]User, error) {
 	}
 	defer rows.Close()
 
-	var result []User
+	var result []DisplayUser
 	for rows.Next() {
-		item := User{}
+		item := DisplayUser{}
 		err2 := rows.Scan(&item.ID, &item.Username, &item.Role)
 		if err2 != nil {
 			return nil, err
@@ -115,22 +122,20 @@ func DisplayUsers(db *sql.DB) ([]User, error) {
 	return result, err
 }
 
-func GetUserById(db *sql.DB, id int) (User, error) {
-	row := db.QueryRow("SELECT * FROM User WHERE id=?", id)
+func GetUserById(db *sql.DB, id int) (DisplayUser, error) {
+	row := db.QueryRow("SELECT id, username, role FROM User WHERE id=?", id)
 
-	var item User
-	var pass string
-	err := row.Scan(&item.ID, &item.Username, &pass, &item.Role)
+	var item DisplayUser
+	err := row.Scan(&item.ID, &item.Username, &item.Role)
 
 	return item, err
 }
 
-func GetUserByName(db *sql.DB, username string) (User, error) {
-	row := db.QueryRow("SELECT * FROM User WHERE username=?", username)
+func GetUserByName(db *sql.DB, username string) (DisplayUser, error) {
+	row := db.QueryRow("SELECT id, username, role FROM User WHERE username=?", username)
 
-	var item User
-	var pass string
-	err := row.Scan(&item.ID, &item.Username, &pass, &item.Role)
+	var item DisplayUser
+	err := row.Scan(&item.ID, &item.Username, &item.Role)
 
 	return item, err
 }
