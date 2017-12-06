@@ -16,6 +16,7 @@ func InitDB(filepath string) *sql.DB {
 
 	models.CreateImageTable(db)
 	models.CreateRegistryTable(db)
+	models.CreateUser(db)
 
 	return db
 }

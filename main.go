@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/JohnPTobe/seed-common/util"
 	"github.com/gorilla/mux"
@@ -13,6 +14,35 @@ import (
 var db *sql.DB
 var router *mux.Router
 var err error
+
+// ScanLock is safe to use concurrently.
+type ScanLock struct {
+	ScanInProcess   bool
+	mux sync.Mutex
+}
+
+// IsScanning checks whether the registries are being scanned
+func (sl *ScanLock) IsScanning() bool {
+	sl.mux.Lock()
+	defer sl.mux.Unlock()
+	return sl.ScanInProcess
+}
+
+// StartScan
+func (sl *ScanLock) StartScan() {
+	sl.mux.Lock()
+	defer sl.mux.Unlock()
+	sl.ScanInProcess = true
+}
+
+// EndScan
+func (sl *ScanLock) EndScan() {
+	sl.mux.Lock()
+	defer sl.mux.Unlock()
+	sl.ScanInProcess = false
+}
+
+var sl = ScanLock{ScanInProcess: false}
 
 func main() {
 	db = InitDB("/usr/silo/seed-silo.db")

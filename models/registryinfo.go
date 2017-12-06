@@ -11,8 +11,15 @@ type RegistryInfo struct {
 	Name     string `db:name`
 	Url      string `db:url`
 	Org      string `db:org`
-	Username string `json:"-"`
-	Password string `json:"-"`
+	Username string `db:username`
+	Password string `db:password`
+}
+
+type DisplayRegistry struct {
+	ID       int    `db:id`
+	Name     string `db:name`
+	Url      string `db:url`
+	Org      string `db:org`
 }
 
 func CreateRegistryTable(db *sql.DB) {
@@ -70,7 +77,7 @@ func DeleteRegistry(db *sql.DB, id int) error {
 }
 
 //Get list of registries without username/password for display
-func DisplayRegistries(db *sql.DB) ([]RegistryInfo, error) {
+func DisplayRegistries(db *sql.DB) ([]DisplayRegistry, error) {
 	sql_readall := `
 	SELECT id, name, url, org FROM RegistryInfo
 	ORDER BY id ASC
@@ -82,9 +89,9 @@ func DisplayRegistries(db *sql.DB) ([]RegistryInfo, error) {
 	}
 	defer rows.Close()
 
-	var result []RegistryInfo
+	var result []DisplayRegistry
 	for rows.Next() {
-		item := RegistryInfo{}
+		item := DisplayRegistry{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.Url, &item.Org)
 		if err2 != nil {
 			return nil, err

@@ -13,8 +13,12 @@ import (
 	"strings"
 
 	"github.com/ngageoint/seed-silo/models"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
+	"github.com/mitchellh/mapstructure"
 	"github.com/JohnPTobe/seed-common/registry"
+	"github.com/JohnPTobe/seed-common/util"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +95,14 @@ func DeleteRegistry(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRegistry(w http.ResponseWriter, r *http.Request) {
+	//prevent multiple requests to scan registries
+	if sl.IsScanning() {
+		respondWithJSON(w, http.StatusAccepted, map[string]string{"message": "Scanning Registries"})
+		return
+	}
+	sl.StartScan()
+	defer sl.EndScan()
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -126,6 +138,14 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRegistries(w http.ResponseWriter, r *http.Request) {
+	//prevent multiple requests to scan registries
+	if sl.IsScanning() {
+		respondWithJSON(w, http.StatusAccepted, map[string]string{"message": "Scanning Registries"})
+		return
+	}
+	sl.StartScan()
+	defer sl.EndScan()
+
 	registries, err := models.GetRegistries(db)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -139,7 +159,7 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set("Content-Type", "application/txt; charset=UTF-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(w, "Scanning registries...")
@@ -150,7 +170,7 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 func Scan(w http.ResponseWriter, r *http.Request, registries []models.RegistryInfo) {
 	for _, r := range registries {
 		dbImages := []models.Image{}
-		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
+		fmt.Fprintf(w,"Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
 		registry, err := registry.CreateRegistry(r.Url, r.Username, r.Password)
 		if err != nil {
 			humanError := checkError(err, r.Url, r.Username, r.Password)
@@ -182,17 +202,14 @@ func ListImages(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListRegistries(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.WriteHeader(http.StatusOK)
-
 	registries, err := models.DisplayRegistries(db)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	list := []models.RegistryInfo{}
+	list := []models.DisplayRegistry{}
 	list = append(list, registries...)
 	respondWithJSON(w, http.StatusOK, list)
 }
@@ -316,6 +333,136 @@ func ImageManifest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, image.Seed)
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	//get user provided login and validate it
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := r.Body.Close(); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	var user models.User
+	if err := json.Unmarshal(body, &user); err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	valid, err := models.ValidateUser(db, user.Username, user.Password)
+	if !valid || err != nil{
+		respondWithError(w, http.StatusUnauthorized, "Invalid login")
+		return
+	}
+
+	//get the user object from db with the role attribute and wrap it in a token
+	displayuser, _ := models.GetUserByName(db, user.Username)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": displayuser.Username,
+		"role": displayuser.Role,
+	})
+
+	tokenString, error := token.SignedString([]byte(TokenSecret))
+	if error != nil {
+		util.PrintUtil("Error signing token: %s\n", error.Error())
+		respondWithError(w, http.StatusInternalServerError, "Error creating token")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, models.JwtToken{Token: tokenString})
+}
+
+func Validate(roles []string, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		authorizationHeader := req.Header.Get("authorization")
+		if authorizationHeader != "" {
+			bearerToken := strings.Split(authorizationHeader, " ")
+			if len(bearerToken) == 2 {
+				token, error := jwt.Parse(bearerToken[1], func(token *jwt.Token) (interface{}, error) {
+					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+						return nil, fmt.Errorf("There was an error")
+					}
+					return []byte(TokenSecret), nil
+				})
+				if error != nil {
+					json.NewEncoder(w).Encode(models.Exception{Message: error.Error()})
+					return
+				}
+				if token.Valid {
+					context.Set(req, "decoded", token.Claims)
+					var user models.User
+					mapstructure.Decode(token.Claims, &user)
+					if util.ContainsString(roles, user.Role) {
+						next(w, req)
+					} else {
+						respondWithError(w, http.StatusUnauthorized, "User does not have permission to perform this action")
+					}
+				} else {
+					respondWithError(w, http.StatusUnauthorized, "Invalid authorization token")
+				}
+			}
+		} else {
+			json.NewEncoder(w).Encode(models.Exception{Message: "An authorization header is required"})
+		}
+	})
+}
+
+func AddUser(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := r.Body.Close(); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	var user models.User
+	if err := json.Unmarshal(body, &user); err != nil {
+		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	id, err := models.AddUser(db, user)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	user.ID = id
+	respondWithJSON(w, http.StatusCreated, user)
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	if err := models.DeleteUser(db, id); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
+}
+
+func ListUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := models.DisplayUsers(db)
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	list := []models.DisplayUser{}
+	list = append(list, users...)
+	respondWithJSON(w, http.StatusOK, list)
 }
 
 func checkError(err error, url, username, password string) string {
