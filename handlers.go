@@ -95,6 +95,14 @@ func DeleteRegistry(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRegistry(w http.ResponseWriter, r *http.Request) {
+	//prevent multiple requests to scan registries
+	if sl.IsScanning() {
+		respondWithJSON(w, http.StatusAccepted, map[string]string{"message": "Scanning Registries"})
+		return
+	}
+	sl.StartScan()
+	defer sl.EndScan()
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -130,6 +138,14 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 }
 
 func ScanRegistries(w http.ResponseWriter, r *http.Request) {
+	//prevent multiple requests to scan registries
+	if sl.IsScanning() {
+		respondWithJSON(w, http.StatusAccepted, map[string]string{"message": "Scanning Registries"})
+		return
+	}
+	sl.StartScan()
+	defer sl.EndScan()
+
 	registries, err := models.GetRegistries(db)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -154,7 +170,7 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 func Scan(w http.ResponseWriter, r *http.Request, registries []models.RegistryInfo) {
 	for _, r := range registries {
 		dbImages := []models.Image{}
-		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
+		fmt.Fprintf(w,"Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
 		registry, err := registry.CreateRegistry(r.Url, r.Username, r.Password)
 		if err != nil {
 			humanError := checkError(err, r.Url, r.Username, r.Password)
@@ -190,6 +206,7 @@ func ListRegistries(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	list := []models.DisplayRegistry{}
@@ -323,19 +340,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	if err := r.Body.Close(); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	var user models.User
 	if err := json.Unmarshal(body, &user); err != nil {
 		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
+		return
 	}
 
 	valid, err := models.ValidateUser(db, user.Username, user.Password)
 	if !valid || err != nil{
 		respondWithError(w, http.StatusUnauthorized, "Invalid login")
+		return
 	}
 
 	//get the user object from db with the role attribute and wrap it in a token
@@ -349,6 +370,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	if error != nil {
 		util.PrintUtil("Error signing token: %s\n", error.Error())
 		respondWithError(w, http.StatusInternalServerError, "Error creating token")
+		return
 	}
 
 	respondWithJSON(w, http.StatusOK, models.JwtToken{Token: tokenString})
@@ -374,7 +396,6 @@ func Validate(roles []string, next http.HandlerFunc) http.HandlerFunc {
 					context.Set(req, "decoded", token.Claims)
 					var user models.User
 					mapstructure.Decode(token.Claims, &user)
-					fmt.Printf("user: %s\n", user.Username)
 					if util.ContainsString(roles, user.Role) {
 						next(w, req)
 					} else {
@@ -394,18 +415,22 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	if err := r.Body.Close(); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	var user models.User
 	if err := json.Unmarshal(body, &user); err != nil {
 		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
+		return
 	}
 
 	id, err := models.AddUser(db, user)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	user.ID = id
 	respondWithJSON(w, http.StatusCreated, user)
@@ -432,6 +457,7 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	list := []models.DisplayUser{}
