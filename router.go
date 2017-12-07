@@ -21,6 +21,7 @@ var handler = map[string]http.HandlerFunc{
 	"Image": Image,
 	"ImageManifest": ImageManifest,
 	"Login": Login,
+	"User": User,
 	"AddUser": Validate([]string{"admin"}, AddUser),
 	"DeleteUser": Validate([]string{"admin"}, DeleteUser),
 	"ListUsers": ListUsers,

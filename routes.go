@@ -68,6 +68,11 @@ var routes = []Route{
 		"/login",
 	},
 	Route{
+		"User",
+		"GET",
+		"/user/{id}",
+	},
+	Route{
 		"AddUser",
 		"POST",
 		"/user/add",

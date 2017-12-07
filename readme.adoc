@@ -56,7 +56,7 @@ Retrieves a registry
         Content: { error : "No registry found with that ID" }
 
 |Sample Call
-| curl -X "GET" http://localhost:8080/registry/1
+| curl -X "GET" http://localhost:9000/registry/1
 |===
 
 ==== Add Registry
@@ -92,7 +92,7 @@ the daemon is unable to connect to the registry.
         Content: { error : "Error unmarshalling json. " }
 
 |Sample Call
-| curl -H "Content-Type: application/json" -d '{"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}' http://localhost:8080/registry/add
+| curl -H "Content-Type: application/json" -d '{"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}' http://localhost:9000/registry/add
 |===
 
 ==== Delete Registry
@@ -122,12 +122,13 @@ Removes a registry from the list of registries along with all images associated 
         Content: { error : "Invalid ID" }
 
 |Sample Call
-| curl -X "DELETE" http://localhost:8080/registry/delete/1
+| curl -X "DELETE" http://localhost:9000/registry/delete/1
 |===
 
 ==== Scan Registries
 
 Removes all existing image entries, scans all registries for seed images and adds them to the database.
+Requires admin authorization token
 
 [cols="h,5a"]
 |===
@@ -145,18 +146,24 @@ Removes all existing image entries, scans all registries for seed images and add
 
 | Success Response
 |       Code: 202 +
-        Content: { }
+        Content: { } +
+        Code: 202 +
+        Content: {"message":"Scanning Registries"}
 
 |Error Response
-|       None
+|       Code: 401 Unauthorized +
+        Content: { error : "Invalid authorization token" } or { error : "Missing authorization token" } +
+        Code: 403 Forbidden +
+        Content: { error : "User does not have permission to perform this action" }
 
 |Sample Call
-| curl "https://localhost:5000/registries/scan"
+| curl -H "Authorization: Token <token>" "https://localhost:9000/registries/scan"
 |===
 
 ==== Scan Registry
 
 Removes all existing image entries, scans all registries for seed images and adds them to the database.
+Requires admin authorization token
 
 [cols="h,5a"]
 |===
@@ -174,13 +181,18 @@ Removes all existing image entries, scans all registries for seed images and add
 
 | Success Response
 |       Code: 202 +
-        Content: { }
+        Content: { } +
+        Code: 202 +
+        Content: {"message":"Scanning Registries"}
 
 |Error Response
-|       None
+|       Code: 401 Unauthorized +
+        Content: { error : "Invalid authorization token" } or { error : "Missing authorization token" } +
+        Code: 403 Forbidden +
+        Content: { error : "User does not have permission to perform this action" }
 
 |Sample Call
-| curl "https://localhost:5000/registry/1/scan"
+| curl -H "Authorization: Token <token>" "https://localhost:9000/registry/1/scan"
 |===
 
 ==== List Registries
@@ -218,7 +230,7 @@ Retrieves all of the registries that have been successfully added
 |       None
 
 |Sample Call
-| curl "https://localhost:5000/registries"
+| curl "https://localhost:9000/registries"
 |===
 
 === Image
@@ -269,7 +281,7 @@ Retrieves all of the Seed images that have been scanned from registries
 |       None
 
 |Sample Call
-| curl "https://localhost:5000/images"
+| curl "https://localhost:9000/images"
 |===
 
 ==== Search Images
@@ -316,7 +328,7 @@ returned if the name, organization or manifest strings match the given query.
 |       None
 
 |Sample Call
-| curl "https://localhost:5000/images/search/test"
+| curl "https://localhost:9000/images/search/test"
 |===
 
 ==== Get Image
@@ -356,7 +368,7 @@ Retrieves an image
         Content: { error : "No image found with that ID" }
 
 |Sample Call
-| curl -X "GET" http://localhost:8080/images/1
+| curl -X "GET" http://localhost:9000/images/1
 |===
 
 ==== Image Manifest
@@ -388,5 +400,181 @@ Returns the Seed manifest json for the given image id.
         Content: { error : "No image found with that ID" }
 
 |Sample Call
-| curl "https://localhost:5000/images/1/manifest"
+| curl "https://localhost:9000/images/1/manifest"
+|===
+
+=== User
+
+Users can be added, deleted, listed and used to login. A user consists of a username, password, and a role.
+
+==== Get User
+
+Retrieves a user
+
+[cols="h,5a"]
+|===
+| URL
+| /registry/{id}
+
+| Method
+| GET
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: {"ID":1,"username":"admin","role":"admin"}
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid ID" } +
+        Code: 404 File not found +
+        Content: { error : "No user found with that ID" }
+
+|Sample Call
+| curl -X "GET" http://localhost:9000/user/1
+|===
+
+==== Add User
+
+Adds a user to the system.  Requires a valid token from an admin user.
+
+[cols="h,5a"]
+|===
+| URL
+| /user/add
+
+| Method
+| POST
+
+| URL Params
+| None
+
+| Data Params
+| {"username":"admin", "password": "hunter17", "role": "admin"}
+
+| Success Response
+|      Code: 201 +
+       Content: {"username":"admin", "password": "hunter17", "role": "admin"}
+
+|Error Response
+|       Code: 401 Unauthorized +
+        Content: { error : "Invalid authorization token" } or { error : "Missing authorization token" } +
+        Code: 403 Forbidden +
+        Content: { error : "User does not have permission to perform this action" } +
+        Code: 422 Unprocessable Entity +
+        Content: { error : "Error unmarshalling json. " }
+
+|Sample Call
+|curl -H "Content-Type: application/json" -d '{"username":"admin", "password": "hunter17", "role": "admin"}' -H "Authorization: Token <token>" http://localhost:9000/user/add
+|===
+
+==== Delete User
+
+Removes a user from the system.  Requires a valid token from an admin user.
+
+[cols="h,5a"]
+|===
+| URL
+| /user/delete/{id}
+
+| Method
+| DELETE
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: { }
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid ID" } +
+        Code: 401 Unauthorized +
+        Content: { error : "Invalid authorization token" } or { error : "Missing authorization token" } +
+        Code: 403 Forbidden +
+        Content: { error : "User does not have permission to perform this action" }
+
+|Sample Call
+| curl -X "DELETE" -H "Authorization: Token <token>" http://localhost:9000/user/delete/1
+|===
+
+==== List Users
+
+Retrieves all of the users in the system
+
+[cols="h,5a"]
+|===
+| URL
+| /users
+
+| Method
+| GET
+
+| URL Params
+| None
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: [ +
+                   { +
+                     "ID": 1, +
+                     "username": "admin", +
+                     "role": "admin" +
+                   }, +
+                   { +
+                     "ID": 2, +
+                     "username": "user", +
+                     "role": "user" +
+                   } +
+                 ]
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:9000/users"
+|===
+
+==== Login
+
+Authenticates a user and returns a token to be used in subsequent api calls
+
+[cols="h,5a"]
+|===
+| URL
+| /login
+
+| Method
+| GET
+
+| URL Params
+| None
+
+| Data Params
+| {"username":"admin", "password": "password"}
+
+| Success Response
+|       Code: 200 +
+        Content: {"token":"<token>"}
+
+|Error Response
+|       Code: 401 Unauthorized +
+        Content: { error : "Invalid login" } +
+        Code: 422 Unprocessable Entity +
+        Content: { error : "Error unmarshalling json. " }
+
+|Sample Call
+| curl -H "Content-Type: application/json" -d '{"username":"admin", "password": "password"}' "https://localhost:9000/login"
 |===

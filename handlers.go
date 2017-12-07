@@ -399,16 +399,38 @@ func Validate(roles []string, next http.HandlerFunc) http.HandlerFunc {
 					if util.ContainsString(roles, user.Role) {
 						next(w, req)
 					} else {
-						respondWithError(w, http.StatusUnauthorized, "User does not have permission to perform this action")
+						respondWithError(w, http.StatusForbidden, "User does not have permission to perform this action")
 					}
 				} else {
 					respondWithError(w, http.StatusUnauthorized, "Invalid authorization token")
 				}
 			}
 		} else {
-			json.NewEncoder(w).Encode(models.Exception{Message: "An authorization header is required"})
+			respondWithError(w, http.StatusUnauthorized, "Missing authorization token")
 		}
 	})
+}
+
+func User(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	reg, err := models.GetUserById(db, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			respondWithError(w, http.StatusNotFound, "No user found with that ID")
+			return
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, reg)
 }
 
 func AddUser(w http.ResponseWriter, r *http.Request) {
