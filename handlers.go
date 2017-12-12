@@ -389,7 +389,7 @@ func Validate(roles []string, next http.HandlerFunc) http.HandlerFunc {
 					return []byte(TokenSecret), nil
 				})
 				if error != nil {
-					json.NewEncoder(w).Encode(models.Exception{Message: error.Error()})
+					respondWithError(w, http.StatusInternalServerError, error.Error())
 					return
 				}
 				if token.Valid {
@@ -521,4 +521,6 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(code)
 	w.Write(response)
+
+	util.PrintUtil("Response: %s\n", response)
 }
