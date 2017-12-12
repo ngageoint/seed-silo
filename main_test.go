@@ -3,18 +3,21 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/ngageoint/seed-silo/models"
-	"github.com/JohnPTobe/seed-common/util"
 	"github.com/JohnPTobe/seed-common/objects"
-	"log"
-	"io/ioutil"
+	"github.com/JohnPTobe/seed-common/util"
+	"github.com/ngageoint/seed-silo/models"
 )
+
+var token = ""
 
 func TestMain(m *testing.M) {
 	db = InitDB("./silo-test.db")
@@ -23,6 +26,8 @@ func TestMain(m *testing.M) {
 	util.InitPrinter(util.PrintErr)
 	log.SetFlags(0)
 	log.SetOutput(ioutil.Discard)
+
+	token, err = login("admin", "spicy-pickles17!")
 
 	code := m.Run()
 
@@ -60,14 +65,19 @@ func TestGetNonExistentItem(t *testing.T) {
 	cases := []struct {
 		urlStr   string
 		code     int
+		auth     bool
 		errorMsg string
 	}{
-		{"/registry/1/scan", 404, "No registry found with that ID"},
-		{"/images/1/manifest", 404, "No image found with that ID"},
+		{"/registry/1/scan", 401, false, "Missing authorization token"},
+		{"/registry/1/scan", 404, true, "No registry found with that ID"},
+		{"/images/1/manifest", 404, false, "No image found with that ID"},
 	}
 
 	for _, c := range cases {
 		req, _ := http.NewRequest("GET", c.urlStr, nil)
+		if c.auth {
+			req.Header.Set("Authorization", "Token: " + token)
+		}
 		response := executeRequest(req)
 
 		checkResponseCode(t, c.code, response.Code)
@@ -119,11 +129,13 @@ func TestDeleteRegistry(t *testing.T) {
 
 	payload := []byte(``)
 	req, _ := http.NewRequest("DELETE", "/registry/delete/1", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
 	req, _ = http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusNotFound, response.Code)
@@ -137,6 +149,7 @@ func TestDeleteRegistry(t *testing.T) {
 	}
 
 	req, _ = http.NewRequest("DELETE", "/registry/delete/test", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusBadRequest, response.Code)
@@ -149,6 +162,7 @@ func TestScanRegistry(t *testing.T) {
 
 	payload := []byte(``)
 	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
 	checkResponseCode(t, 202, response.Code)
@@ -169,6 +183,7 @@ func TestScanRegistry(t *testing.T) {
 	}
 
 	req, _ = http.NewRequest("GET", "/registry/test/scan", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusBadRequest, response.Code)
@@ -181,6 +196,7 @@ func TestSearchImages(t *testing.T) {
 
 	payload := []byte(``)
 	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
 	checkResponseCode(t, 202, response.Code)
@@ -218,6 +234,7 @@ func TestImageManifest(t *testing.T) {
 
 	payload := []byte(``)
 	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
 	checkResponseCode(t, 202, response.Code)
@@ -264,4 +281,20 @@ func addRegistry() {
 
 	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
 	executeRequest(req)
+}
+
+func login(username, password string) (string, error) {
+	payload := []byte(`{"username":"` + username + `", "password": "` + password + `"}`)
+
+	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	if response.Code != 200 {
+		return "", errors.New("Login error")
+	}
+
+	m := map[string]string{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	return m["token"], nil
 }
