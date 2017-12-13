@@ -13,9 +13,10 @@ jobs out of them.
 To build/install the SILO webapp on linux:
 
 ----
-Install go and docker packages
+Install go, docker and httpd packages
 yum install go
 yum install docker
+yum install httpd
 go get github.com/ngageoint/seed-silo
 ~/go/src/github.com/ngageoint/seed-silo/install-silo.sh
 ----
