@@ -11,8 +11,8 @@ import (
 var handler = map[string]http.HandlerFunc{
 	"Index": Index,
 	"Registry": Registry,
-	"AddRegistry": AddRegistry,
-	"DeleteRegistry": DeleteRegistry,
+	"AddRegistry": Validate([]string{"admin"}, AddRegistry),
+	"DeleteRegistry": Validate([]string{"admin"}, DeleteRegistry),
 	"ListRegistries": ListRegistries,
 	"ScanRegistries": Validate([]string{"admin"}, ScanRegistries),
 	"ScanRegistry": Validate([]string{"admin"}, ScanRegistry),

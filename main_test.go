@@ -96,6 +96,7 @@ func TestAddRegistry(t *testing.T) {
 	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusCreated, response.Code)
@@ -280,6 +281,7 @@ func addRegistry() {
 	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: " + token)
 	executeRequest(req)
 }
 
