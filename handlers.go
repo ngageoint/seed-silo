@@ -129,7 +129,6 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusAccepted)
 
 	list := []models.RegistryInfo{}
@@ -160,7 +159,6 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/txt; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusAccepted)
 	fmt.Fprintln(w, "Scanning registries...")
 
@@ -518,7 +516,6 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(code)
 	w.Write(response)
 
