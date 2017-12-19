@@ -280,9 +280,12 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 
 	sort.Sort(ByScore(rankedResults))
 
-	results := []models.Image{}
+	results := []models.SimpleImage{}
 	for _, res := range rankedResults {
-		results = append(results, res.Image)
+		simple, err := models.SimplifyImage(res.Image)
+		if err == nil {
+			results = append(results, simple)
+		}
 	}
 
 	respondWithJSON(w, http.StatusOK, results)

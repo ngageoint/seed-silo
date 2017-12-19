@@ -31,6 +31,29 @@ type SimpleImage struct {
 	Description    string
 }
 
+func SimplifyImage(img Image) (SimpleImage, error) {
+	simple := SimpleImage{}
+	simple.ID = img.ID
+	simple.RegistryId = img.RegistryId
+	simple.Name = img.Name
+	simple.Registry = img.Registry
+	simple.Org = img.Org
+
+	var seed objects.Seed
+	err := json.Unmarshal([]byte(img.Manifest), &seed)
+	if err != nil {
+		log.Printf("Error unmarshalling seed manifest for %s: %s \n", img.Name, err.Error())
+	}
+
+	simple.JobName = seed.Job.Name
+	simple.Title = seed.Job.Title
+	simple.JobVersion = seed.Job.JobVersion
+	simple.PackageVersion = seed.Job.PackageVersion
+	simple.Description = seed.Job.Description
+
+	return simple, err
+}
+
 func CreateImageTable(db *sql.DB) {
 	// create table if not exists
 	sql_table := `
