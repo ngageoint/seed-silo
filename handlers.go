@@ -405,6 +405,8 @@ func Validate(roles []string, next http.HandlerFunc) http.HandlerFunc {
 				} else {
 					respondWithError(w, http.StatusUnauthorized, "Invalid authorization token")
 				}
+			} else {
+				respondWithError(w, http.StatusUnauthorized, "Invalid authorization token format: expected 'token <token>'")
 			}
 		} else {
 			respondWithError(w, http.StatusUnauthorized, "Missing authorization token")
