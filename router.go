@@ -25,6 +25,7 @@ var handler = map[string]http.HandlerFunc{
 	"AddUser": Validate([]string{"admin"}, AddUser),
 	"DeleteUser": Validate([]string{"admin"}, DeleteUser),
 	"ListUsers": ListUsers,
+	"PreflightOptions": PreflightOptions,
 }
 
 func NewRouter() (*mux.Router, error) {
@@ -46,6 +47,11 @@ func NewRouter() (*mux.Router, error) {
 			err = errors.New(msg)
 			continue
 		}
+
+		// handle all CORS preflight options
+		po := "PreflightOptions"
+		options := Logger(handler[po], po)
+		router.Methods("OPTIONS").Handler(options)
 
 		logHandler := Logger(handler[route.Name], route.Name)
 		router.

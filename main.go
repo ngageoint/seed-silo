@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/JohnPTobe/seed-common/util"
@@ -17,8 +19,8 @@ var err error
 
 // ScanLock is safe to use concurrently.
 type ScanLock struct {
-	ScanInProcess   bool
-	mux sync.Mutex
+	ScanInProcess bool
+	mux           sync.Mutex
 }
 
 // IsScanning checks whether the registries are being scanned
@@ -56,13 +58,16 @@ func main() {
 		return
 	}
 
-	log.SetOutput(&lumberjack.Logger{
+	logfile := &lumberjack.Logger{
 		Filename:   "/usr/silo/silo.log",
 		MaxSize:    500, // megabytes
 		MaxBackups: 3,
 		MaxAge:     28,    //days
 		Compress:   false, // disabled by default
-	})
+	}
+
+	mw := io.MultiWriter(os.Stdout, logfile)
+	log.SetOutput(mw)
 
 	log.Fatal(http.ListenAndServe(":9000", router))
 }

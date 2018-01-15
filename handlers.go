@@ -490,6 +490,12 @@ func ListUsers(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, list)
 }
 
+func PreflightOptions(w http.ResponseWriter, r *http.Request) {
+	// return 200 OK for all preflight CORS requests
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
+	return
+}
+
 func checkError(err error, url, username, password string) string {
 	if err == nil {
 		return ""

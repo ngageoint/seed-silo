@@ -87,6 +87,11 @@ var routes = []Route{
 		"GET",
 		"/users",
 	},
+	Route{
+		"PreflightOptions",
+		"OPTIONS",
+		"/*",
+	},
 }
 
 func GetRoutes() []Route {
