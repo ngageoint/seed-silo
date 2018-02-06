@@ -93,7 +93,7 @@ func TestGetNonExistentItem(t *testing.T) {
 func TestAddRegistry(t *testing.T) {
 	clearTable()
 
-	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":johnptobe", "username":"", "password": ""}`)
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
@@ -278,7 +278,7 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 }
 
 func addRegistry() {
-	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":johnptobe", "username":"", "password": ""}`)
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
