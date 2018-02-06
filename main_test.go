@@ -93,7 +93,7 @@ func TestGetNonExistentItem(t *testing.T) {
 func TestAddRegistry(t *testing.T) {
 	clearTable()
 
-	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"ngageoint", "username":"", "password": ""}`)
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":johnptobe", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
@@ -118,8 +118,8 @@ func TestAddRegistry(t *testing.T) {
 		t.Errorf("Expected url to be 'https://hub.docker.com'. Got '%v'", m["Url"])
 	}
 
-	if m["Org"] != "ngageoint" {
-		t.Errorf("Expected org to be 'ngageoint'. Got '%v'", m["Org"])
+	if m["Org"] != "johnptobe" {
+		t.Errorf("Expected org to be 'johnptobe'. Got '%v'", m["Org"])
 	}
 }
 
@@ -178,7 +178,7 @@ func TestScanRegistry(t *testing.T) {
 	m[0].Manifest = ""
 	m[0].Seed = objects.Seed{}
 
-	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "ngageoint"}
+	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
 	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
@@ -212,7 +212,7 @@ func TestSearchImages(t *testing.T) {
 	m[0].Manifest = ""
 	m[0].Seed = objects.Seed{}
 
-	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "ngageoint"}
+	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
 	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
@@ -278,7 +278,7 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 }
 
 func addRegistry() {
-	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"ngageoint", "username":"", "password": ""}`)
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":johnptobe", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
