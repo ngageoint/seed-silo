@@ -6,7 +6,7 @@ services:
   - docker
 
 install:
-  - go get github.com/JohnPTobe/seed-common/...
+  - go get github.com/ngageoint/seed-common/...
 
 script:
   - ./build-silo.sh

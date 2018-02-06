@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/JohnPTobe/seed-common/objects"
+	"github.com/ngageoint/seed-common/objects"
 )
 
 type Image struct {
