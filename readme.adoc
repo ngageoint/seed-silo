@@ -86,14 +86,15 @@ the daemon is unable to connect to the registry.
 |Error Response
 |       Code: 400 Bad Request +
         Content: { error : "Unable to connect to registry" } +
-         +
-        OR +
-         +
+        Code: 401 Unauthorized +
+        Content: { error : "Invalid authorization token" } or { error : "Missing authorization token" } +
+        Code: 403 Forbidden +
+        Content: { error : "User does not have permission to perform this action" }
         Code: 422 Unprocessable Entity +
         Content: { error : "Error unmarshalling json. " }
 
 |Sample Call
-| curl -H "Content-Type: application/json" -d '{"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}' http://localhost:9000/registry/add
+| curl -H "Authorization: Token <token>" -H "Content-Type: application/json" -d '{"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}' http://localhost:9000/registry/add
 |===
 
 ==== Delete Registry
@@ -120,10 +121,14 @@ Removes a registry from the list of registries along with all images associated 
 
 |Error Response
 |       Code: 400 Bad Request +
-        Content: { error : "Invalid ID" }
+        Content: { error : "Invalid ID" } +
+        Code: 401 Unauthorized +
+        Content: { error : "Invalid authorization token" } or { error : "Missing authorization token" } +
+        Code: 403 Forbidden +
+        Content: { error : "User does not have permission to perform this action" }
 
 |Sample Call
-| curl -X "DELETE" http://localhost:9000/registry/delete/1
+| curl -H "Authorization: Token <token>" -X "DELETE" http://localhost:9000/registry/delete/1
 |===
 
 ==== Scan Registries
@@ -313,7 +318,11 @@ returned if the name, organization or manifest strings match the given query.
                      "Name": "my-job-0.1.0-seed:0.1.0", +
                      "Registry": "localhost:5000", +
                      "Org": "", +
-                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
+                     "JobName": "my-job" +
+                     "Title": "My first job" +
+                     "JobVersion": "0.1.0" +
+                     "PackageVersion": "0.1.0" +
+                     "Description": "Reads an HDF5 file and o…t containing cell_count" +
                    }, +
                    { +
                      "ID": 4, +
@@ -321,7 +330,11 @@ returned if the name, organization or manifest strings match the given query.
                      "Name": "my-job-0.1.0-seed:0.1.0", +
                      "Registry": "localhost:5000", +
                      "Org": "", +
-                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
+                     "JobName": "my-job2" +
+                     "Title": "My second job" +
+                     "JobVersion": "0.1.0" +
+                     "PackageVersion": "0.1.0" +
+                     "Description": "Reads another HDF5 file and..." +
                    } +
                  ]
 
@@ -360,6 +373,7 @@ Retrieves an image
                      "Registry": "localhost:5000", +
                      "Org": "", +
                      "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
+                      <full seed json> link:seed.manifest.json[sample manifest] +
                    }
 
 |Error Response
