@@ -152,7 +152,7 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//clear out image table before scanning
-	_, err = db.Exec("DELETE FROM Image")
+	err = models.ResetImageTable(db)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
