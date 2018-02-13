@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/JohnPTobe/seed-common/objects"
+	"github.com/ngageoint/seed-common/objects"
 )
 
 type Image struct {
@@ -75,6 +75,25 @@ func CreateImageTable(db *sql.DB) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func ResetImageTable(db *sql.DB) error {
+	// delete all images and reset the counter
+	delete := `DELETE FROM Image;`
+
+	_, err := db.Exec(delete)
+	if err != nil {
+		panic(err)
+	}
+
+	reset := `DELETE FROM sqlite_sequence WHERE NAME='Image';`
+
+	_, err2 := db.Exec(reset)
+	if err2 != nil {
+		panic(err2)
+	}
+
+	return err2
 }
 
 func StoreImage(db *sql.DB, images []Image) {

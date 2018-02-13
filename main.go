@@ -8,7 +8,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/JohnPTobe/seed-common/util"
+	"github.com/ngageoint/seed-common/util"
 	"github.com/gorilla/mux"
 	"gopkg.in/natefinch/lumberjack.v2"
 )

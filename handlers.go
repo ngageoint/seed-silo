@@ -17,8 +17,8 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
-	"github.com/JohnPTobe/seed-common/registry"
-	"github.com/JohnPTobe/seed-common/util"
+	"github.com/ngageoint/seed-common/registry"
+	"github.com/ngageoint/seed-common/util"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +152,7 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//clear out image table before scanning
-	_, err = db.Exec("DELETE FROM Image")
+	err = models.ResetImageTable(db)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
