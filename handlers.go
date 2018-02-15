@@ -60,10 +60,11 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
 	}
 	url := reginfo.Url
+	org := reginfo.Org
 	username := reginfo.Username
 	password := reginfo.Password
 
-	registry, err := registry.CreateRegistry(url, username, password)
+	registry, err := registry.CreateRegistry(url, org, username, password)
 	if registry == nil || err != nil {
 		humanError := checkError(err, url, username, password)
 		respondWithError(w, http.StatusBadRequest, humanError)
@@ -169,17 +170,29 @@ func Scan(w http.ResponseWriter, r *http.Request, registries []models.RegistryIn
 	for _, r := range registries {
 		dbImages := []models.Image{}
 		fmt.Fprintf(w,"Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
-		registry, err := registry.CreateRegistry(r.Url, r.Username, r.Password)
+		registry, err := registry.CreateRegistry(r.Url, r.Org, r.Username, r.Password)
 		if err != nil {
 			humanError := checkError(err, r.Url, r.Username, r.Password)
 			fmt.Fprint(w, humanError, "\n")
 		}
 
-		images, err := registry.ImagesWithManifests(r.Org)
+		images, err := registry.ImagesWithManifests()
 
 		for _, img := range images {
 			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest, RegistryId: r.ID}
 			dbImages = append(dbImages, image)
+			/*exists := models.ImageExists(db, image) //add logic to skip this test for deep scans
+			if !exists {
+				manifest, err := r.GetImageManifest(img)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				image.Manifest = manifest
+				image.Registry = r.Name
+				image.Org = r.Org
+				dbImages = append(dbImages, image)
+			}*/
 			_, err := json.Marshal(img)
 			if err != nil {
 				fmt.Println(err)

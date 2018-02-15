@@ -7,19 +7,19 @@ import (
 
 //TODO: find better way to store credentials for low side registries
 type RegistryInfo struct {
-	ID       int    `db:id`
-	Name     string `db:name`
-	Url      string `db:url`
-	Org      string `db:org`
-	Username string `db:username`
-	Password string `db:password`
+	ID       int    `db:"id"`
+	Name     string `db:"name"`
+	Url      string `db:"url"`
+	Org      string `db:"org"`
+	Username string `db:"username"`
+	Password string `db:"password"`
 }
 
 type DisplayRegistry struct {
-	ID       int    `db:id`
-	Name     string `db:name`
-	Url      string `db:url`
-	Org      string `db:org`
+	ID       int    `db:"id"`
+	Name     string `db:"name"`
+	Url      string `db:"url"`
+	Org      string `db:"org"`
 }
 
 func CreateRegistryTable(db *sql.DB) {

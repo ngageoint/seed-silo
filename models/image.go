@@ -9,12 +9,12 @@ import (
 )
 
 type Image struct {
-	ID         int    `db:id`
-	RegistryId int    `db:registry_id`
-	Name       string `db:name`
-	Registry   string `db:registry`
-	Org        string `db:org`
-	Manifest   string `db:manifest`
+	ID         int    `db:"id"`
+	RegistryId int    `db:"registry_id"`
+	Name       string `db:"name"`
+	Registry   string `db:"registry"`
+	Org        string `db:"org"`
+	Manifest   string `db:"manifest"`
 	Seed       objects.Seed
 }
 
@@ -218,4 +218,13 @@ func DeleteRegistryImages(db *sql.DB, registryId int) error {
 	_, err := db.Exec("DELETE FROM Image WHERE registry_id=$1", registryId)
 
 	return err
+}
+
+func ImageExists(db *sql.DB, im Image) bool {
+	row := db.QueryRow("SELECT * FROM Image WHERE name=$1 AND registry_id=$2", im.Name, im.RegistryId)
+
+	var result Image
+	err := row.Scan(&result.ID, &result.RegistryId, &result.Name, &result.Registry, &result.Org, &result.Manifest)
+
+	return err == nil
 }
