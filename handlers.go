@@ -173,7 +173,11 @@ func Scan(w http.ResponseWriter, r *http.Request, registries []models.RegistryIn
 		registry, err := registry.CreateRegistry(r.Url, r.Org, r.Username, r.Password)
 		if err != nil {
 			humanError := checkError(err, r.Url, r.Username, r.Password)
-			fmt.Fprint(w, humanError, "\n")
+			respondWithError(w, http.StatusInternalServerError, humanError)
+		}
+
+		if registry == nil {
+			respondWithError(w, http.StatusInternalServerError, "Error creating registry.")
 		}
 
 		images, err := registry.ImagesWithManifests()

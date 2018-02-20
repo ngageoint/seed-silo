@@ -18,10 +18,10 @@ case "${UNAME}" in
     Linux*)     SUDO=sudo;;
 esac
 
-./build-silo.sh
+build-silo.sh
 
 ${SUDO} docker build . -t silo:$VERSION
 ${SUDO} docker tag silo:$VERSION docker.platform.cloud.coe.ic.gov/nga-r-dev/silo:$VERSION
-${SUDO} docker push./ docker.platform.cloud.coe.ic.gov/nga-r-dev/silo:$VERSION
+${SUDO} docker push docker.platform.cloud.coe.ic.gov/nga-r-dev/silo:$VERSION
 
 popd >/dev/null
