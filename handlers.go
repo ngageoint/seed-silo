@@ -129,11 +129,16 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 	list := []models.RegistryInfo{}
 	list = append(list, registry)
 	dbImages, err := Scan(w, r, list)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	//clear out image table before scanning
 	err = models.DeleteRegistryImages(db, id)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	models.StoreImage(db, dbImages)
@@ -159,11 +164,16 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Scanning registries...")
 
 	dbImages, err := Scan(w, r, registries)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	//clear out image table before scanning
 	err = models.ResetImageTable(db)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	models.StoreImage(db, dbImages)
