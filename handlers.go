@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -60,10 +61,11 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
 	}
 	url := reginfo.Url
+	org := reginfo.Org
 	username := reginfo.Username
 	password := reginfo.Password
 
-	registry, err := registry.CreateRegistry(url, username, password)
+	registry, err := registry.CreateRegistry(url, org, username, password)
 	if registry == nil || err != nil {
 		humanError := checkError(err, url, username, password)
 		respondWithError(w, http.StatusBadRequest, humanError)
@@ -121,6 +123,17 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
+	w.WriteHeader(http.StatusAccepted)
+
+	list := []models.RegistryInfo{}
+	list = append(list, registry)
+	dbImages, err := Scan(w, r, list)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	//clear out image table before scanning
 	err = models.DeleteRegistryImages(db, id)
 	if err != nil {
@@ -128,12 +141,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/text; charset=UTF-8")
-	w.WriteHeader(http.StatusAccepted)
-
-	list := []models.RegistryInfo{}
-	list = append(list, registry)
-	Scan(w, r, list)
+	models.StoreImage(db, dbImages)
 }
 
 func ScanRegistries(w http.ResponseWriter, r *http.Request) {
@@ -151,6 +159,16 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/txt; charset=UTF-8")
+	w.WriteHeader(http.StatusAccepted)
+	fmt.Fprintln(w, "Scanning registries...")
+
+	dbImages, err := Scan(w, r, registries)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	//clear out image table before scanning
 	err = models.ResetImageTable(db)
 	if err != nil {
@@ -158,37 +176,39 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/txt; charset=UTF-8")
-	w.WriteHeader(http.StatusAccepted)
-	fmt.Fprintln(w, "Scanning registries...")
-
-	Scan(w, r, registries)
+	models.StoreImage(db, dbImages)
 }
 
-func Scan(w http.ResponseWriter, r *http.Request, registries []models.RegistryInfo) {
+func Scan(w http.ResponseWriter, req *http.Request, registries []models.RegistryInfo) ([]models.Image, error) {
+	dbImages := []models.Image{}
 	for _, r := range registries {
-		dbImages := []models.Image{}
 		fmt.Fprintf(w,"Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
-		registry, err := registry.CreateRegistry(r.Url, r.Username, r.Password)
+		registry, err := registry.CreateRegistry(r.Url, r.Org, r.Username, r.Password)
 		if err != nil {
 			humanError := checkError(err, r.Url, r.Username, r.Password)
-			fmt.Fprint(w, humanError, "\n")
+			respondWithError(w, http.StatusInternalServerError, humanError)
+			return nil, err
 		}
 
-		images, err := registry.ImagesWithManifests(r.Org)
+		if registry == nil {
+			respondWithError(w, http.StatusInternalServerError, "Error creating registry.")
+			return nil, errors.New("ERROR: Unknown error creating registry.")
+		}
+
+		images, err := registry.ImagesWithManifests()
 
 		for _, img := range images {
 			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest, RegistryId: r.ID}
 			dbImages = append(dbImages, image)
 			_, err := json.Marshal(img)
 			if err != nil {
-				fmt.Println(err)
+				log.Print(err)
 				continue
 			}
 		}
-
-		models.StoreImage(db, dbImages)
 	}
+
+	return dbImages, err
 }
 
 func ListImages(w http.ResponseWriter, r *http.Request) {
