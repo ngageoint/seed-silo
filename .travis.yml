@@ -9,8 +9,8 @@ install:
   - go get github.com/ngageoint/seed-common/...
 
 script:
-  - ./build-silo.sh
-  - go test .
+#  - ./build-silo.sh
+#  - go test .
 
 notifications:
   webhooks:

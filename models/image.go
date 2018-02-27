@@ -11,25 +11,19 @@ import (
 type Image struct {
 	ID         int    `db:"id"`
 	RegistryId int    `db:"registry_id"`
-	Name       string `db:"name"`
+	ImageGroupId int  `db:"image_group_id"`
+	JobGroupId int `db:"job_version_group_id"`
+	FullName       string `db:"full_name"`
+	ShortName string `db:"short_name"`
+	JobVersion string `db:"job_version"`
+	PackageVersion string `db:"package_version"`
 	Registry   string `db:"registry"`
 	Org        string `db:"org"`
 	Manifest   string `db:"manifest"`
 	Seed       objects.Seed
 }
 
-type SimpleImage struct {
-	ID             int
-	RegistryId     int
-	Name           string
-	Registry       string
-	Org            string
-	JobName        string
-	Title          string
-	JobVersion     string
-	PackageVersion string
-	Description    string
-}
+
 
 func SimplifyImage(img Image) (SimpleImage, error) {
 	simple := SimpleImage{}
