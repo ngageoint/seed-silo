@@ -9,6 +9,7 @@ install:
   - go get github.com/ngageoint/seed-common/...
 
 script:
+   - echo "skipping tests"
 #  - ./build-silo.sh
 #  - go test .
 
