@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-type ImageGroup struct {
+type Job struct {
 	ID                   int    `db:"id"`
 	Name                 string `db:"name"`
 	LatestJobVersion     string `db:"latest_job_version"`
@@ -17,10 +17,10 @@ type ImageGroup struct {
 	Description          string `db:"description"`
 }
 
-func CreateImageGroupTable(db *sql.DB) {
+func CreateJobTable(db *sql.DB) {
 	// create table if not exists
 	sql_table := `
-	CREATE TABLE IF NOT EXISTS ImageGroup(
+	CREATE TABLE IF NOT EXISTS Job(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
 		latest_image_version_id INTEGER NOT NULL,
@@ -37,16 +37,16 @@ func CreateImageGroupTable(db *sql.DB) {
 	}
 }
 
-func ResetImageGroupTable(db *sql.DB) error {
+func ResetJobTable(db *sql.DB) error {
 	// delete all images and reset the counter
-	delete := `DELETE FROM ImageGroup;`
+	delete := `DELETE FROM Job;`
 
 	_, err := db.Exec(delete)
 	if err != nil {
 		panic(err)
 	}
 
-	reset := `DELETE FROM sqlite_sequence WHERE NAME='ImageGroup';`
+	reset := `DELETE FROM sqlite_sequence WHERE NAME='Job';`
 
 	_, err2 := db.Exec(reset)
 	if err2 != nil {
@@ -56,9 +56,9 @@ func ResetImageGroupTable(db *sql.DB) error {
 	return err2
 }
 
-func StoreImageGroup(db *sql.DB, imagegroups []ImageGroup) {
+func StoreJob(db *sql.DB, jobs []Job) {
 	sql_add := `
-	INSERT OR REPLACE INTO ImageGroup(
+	INSERT OR REPLACE INTO Job(
 		name,
 		latest_image_version_id
 	) values(?, ?)
@@ -70,17 +70,17 @@ func StoreImageGroup(db *sql.DB, imagegroups []ImageGroup) {
 	}
 	defer stmt.Close()
 
-	for _, ig := range imagegroups {
-		_, err2 := stmt.Exec(ig.Name, ig.LatestVersionId)
+	for _, job := range jobs {
+		_, err2 := stmt.Exec(job.Name, job.LatestVersionId)
 		if err2 != nil {
 			panic(err2)
 		}
 	}
 }
 
-func ReadImageGroups(db *sql.DB) []ImageGroup {
+func ReadJobs(db *sql.DB) []Job {
 	sql_readall := `
-	SELECT * FROM ImageGroup
+	SELECT * FROM Job
 	ORDER BY id ASC
 	`
 
@@ -90,9 +90,9 @@ func ReadImageGroups(db *sql.DB) []ImageGroup {
 	}
 	defer rows.Close()
 
-	var result []ImageGroup
+	var result []Job
 	for rows.Next() {
-		item := ImageGroup{}
+		item := Job{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.LatestVersionId)
 		if err2 != nil {
 			panic(err2)
@@ -116,10 +116,10 @@ func ReadImageGroups(db *sql.DB) []ImageGroup {
 	return result
 }
 
-func ReadImageGroup(db *sql.DB, id int) (ImageGroup, error) {
-	row := db.QueryRow("SELECT * FROM ImageGroup WHERE id=?", id)
+func ReadJob(db *sql.DB, id int) (Job, error) {
+	row := db.QueryRow("SELECT * FROM Job WHERE id=?", id)
 
-	var result ImageGroup
+	var result Job
 	err := row.Scan(&result.ID, &result.Name, &result.LatestVersionId)
 	if err != nil {
 		panic(err)
@@ -141,7 +141,7 @@ type JobVersion struct {
 	ID                   int    `db:"id"`
 	GroupName                 string `db:"group_name"`
 	JobVersion string    `db:"job_version"`  //major job version
-	ImageGroupId int `db:"image_group_id"`
+	JobId int `db:"image_group_id"`
 	LatestPackageId      int    `db:"latest_package_id"`
 	LatestPackageVersion string `db:"latest_package_version"`
 }
@@ -204,7 +204,7 @@ func StoreJobVersion(db *sql.DB, jobs []JobVersion) {
 	defer stmt.Close()
 
 	for _, j := range jobs {
-		_, err2 := stmt.Exec(j.GroupName, j.JobVersion, j.ImageGroupId, j.LatestPackageId)
+		_, err2 := stmt.Exec(j.GroupName, j.JobVersion, j.JobId, j.LatestPackageId)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -226,7 +226,7 @@ func ReadJobVersions(db *sql.DB) []JobVersion {
 	var result []JobVersion
 	for rows.Next() {
 		item := JobVersion{}
-		err2 := rows.Scan(&item.ID, &item.GroupName, &item.JobVersion, &item.ImageGroupId, &item.LatestPackageId)
+		err2 := rows.Scan(&item.ID, &item.GroupName, &item.JobVersion, &item.JobId, &item.LatestPackageId)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -248,7 +248,7 @@ func ReadJobVersion(db *sql.DB, id int) (JobVersion, error) {
 	row := db.QueryRow("SELECT * FROM JobVersion WHERE id=?", id)
 
 	var result JobVersion
-	err := row.Scan(&result.ID, &result.GroupName, &result.JobVersion, &result.ImageGroupId, &result.LatestPackageId)
+	err := row.Scan(&result.ID, &result.GroupName, &result.JobVersion, &result.JobId, &result.LatestPackageId)
 	if err != nil {
 		panic(err)
 	}
