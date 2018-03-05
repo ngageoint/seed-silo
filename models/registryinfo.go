@@ -23,7 +23,7 @@ type DisplayRegistry struct {
 }
 
 func CreateRegistryTable(db *sql.DB) {
-	// create table if not exists
+	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS RegistryInfo(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

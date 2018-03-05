@@ -9,34 +9,45 @@ import (
 )
 
 type Image struct {
-	ID         int    `db:"id"`
-	RegistryId int    `db:"registry_id"`
-	ImageGroupId int  `db:"image_group_id"`
-	JobGroupId int `db:"job_version_group_id"`
-	FullName       string `db:"full_name"`
-	ShortName string `db:"short_name"`
-	JobVersion string `db:"job_version"`
+	ID             int    `db:"id"`
+	RegistryId     int    `db:"registry_id"`
+	JobId          int    `db:"job_id"`
+	JobVersionId   int    `db:"job_version_id"`
+	FullName       string `db:"full_name"`  //full name from registry (may include org et. al.)
+	ShortName      string `db:"short_name"` //job name from seed manifest
+	JobVersion     string `db:"job_version"`
 	PackageVersion string `db:"package_version"`
-	Registry   string `db:"registry"`
-	Org        string `db:"org"`
-	Manifest   string `db:"manifest"`
-	Seed       objects.Seed
+	Registry       string `db:"registry"`
+	Org            string `db:"org"`
+	Manifest       string `db:"manifest"`
+	Seed           objects.Seed
 }
 
-
+type SimpleImage struct {
+	ID             int
+	RegistryId     int
+	Name           string
+	Registry       string
+	Org            string
+	JobName        string
+	Title          string
+	JobVersion     string
+	PackageVersion string
+	Description    string
+}
 
 func SimplifyImage(img Image) (SimpleImage, error) {
 	simple := SimpleImage{}
 	simple.ID = img.ID
 	simple.RegistryId = img.RegistryId
-	simple.Name = img.Name
+	simple.Name = img.ShortName
 	simple.Registry = img.Registry
 	simple.Org = img.Org
 
 	var seed objects.Seed
 	err := json.Unmarshal([]byte(img.Manifest), &seed)
 	if err != nil {
-		log.Printf("Error unmarshalling seed manifest for %s: %s \n", img.Name, err.Error())
+		log.Printf("Error unmarshalling seed manifest for %s: %s \n", img.ShortName, err.Error())
 	}
 
 	simple.JobName = seed.Job.Name
@@ -49,19 +60,32 @@ func SimplifyImage(img Image) (SimpleImage, error) {
 }
 
 func CreateImageTable(db *sql.DB) {
-	// create table if not exists
+	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Image(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		registry_id INTEGER NOT NULL,
-		name TEXT,
+		job_id INTEGER,
+		job_version_id INTEGER,
+		full_name TEXT,
+		short_name TEXT,
+		job_version TEXT,
+		package_version TEXT,
 		registry TEXT,
 		org TEXT,
 		manifest TEXT,
 		CONSTRAINT fk_inv_registry_id
 		    FOREIGN KEY (registry_id)
 		    REFERENCES RegistryInfo (id)
-		    ON DELETE CASCADE
+		    ON DELETE CASCADE,
+		CONSTRAINT fk_inv_job_id
+		    FOREIGN KEY (job_id)
+		    REFERENCES Job (id)
+		    ON DELETE SET NULL,
+		CONSTRAINT fk_inv_job_version_id
+		    FOREIGN KEY (job_version_id)
+		    REFERENCES JobVersion (id)
+		    ON DELETE SET NULL
 	);
 	`
 
@@ -94,11 +118,16 @@ func StoreImage(db *sql.DB, images []Image) {
 	sql_addimg := `
 	INSERT OR REPLACE INTO Image(
 	    registry_id,
-		name,
+	    job_id,
+	    job_version_id,
+	    full_name,
+		short_name,
+		job_version,
+		package_version,
 		registry,
 		org,
 		manifest
-	) values(?, ?, ?, ?, ?)
+	) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	stmt, err := db.Prepare(sql_addimg)
@@ -108,7 +137,8 @@ func StoreImage(db *sql.DB, images []Image) {
 	defer stmt.Close()
 
 	for _, img := range images {
-		_, err2 := stmt.Exec(img.RegistryId, img.Name, img.Registry, img.Org, img.Manifest)
+		_, err2 := stmt.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
+			img.ShortName, img.JobVersion, img.PackageVersion, img.Registry, img.Org, img.Manifest)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -130,14 +160,15 @@ func ReadImages(db *sql.DB) []Image {
 	var result []Image
 	for rows.Next() {
 		item := Image{}
-		err2 := rows.Scan(&item.ID, &item.RegistryId, &item.Name, &item.Registry, &item.Org, &item.Manifest)
+		err2 := rows.Scan(&item.ID, &item.RegistryId, &item.JobId, &item.JobVersionId, &item.FullName,
+			&item.ShortName, &item.JobVersion, &item.PackageVersion, &item.Registry, &item.Org, &item.Manifest)
 		if err2 != nil {
 			panic(err2)
 		}
 
 		err2 = json.Unmarshal([]byte(item.Manifest), &item.Seed)
 		if err2 != nil {
-			log.Printf("Error unmarshalling seed manifest for %s: %s \n", item.Name, err2.Error())
+			log.Printf("Error unmarshalling seed manifest for %s: %s \n", item.FullName, err2.Error())
 		}
 
 		result = append(result, item)
@@ -195,12 +226,13 @@ func ReadImage(db *sql.DB, id int) (Image, error) {
 	row := db.QueryRow("SELECT * FROM Image WHERE id=?", id)
 
 	var result Image
-	err := row.Scan(&result.ID, &result.RegistryId, &result.Name, &result.Registry, &result.Org, &result.Manifest)
+	err := row.Scan(&result.ID, &result.RegistryId, &result.JobId, &result.JobVersionId, &result.FullName,
+		&result.ShortName, &result.JobVersion, &result.PackageVersion, &result.Registry, &result.Org, &result.Manifest)
 
 	if err == nil {
 		err = json.Unmarshal([]byte(result.Manifest), &result.Seed)
 		if err != nil {
-			log.Printf("Error unmarshalling seed manifest for %s: %s \n", result.Name, err.Error())
+			log.Printf("Error unmarshalling seed manifest for %s: %s \n", result.FullName, err.Error())
 			err = nil
 		}
 	}
@@ -215,10 +247,10 @@ func DeleteRegistryImages(db *sql.DB, registryId int) error {
 }
 
 func ImageExists(db *sql.DB, im Image) bool {
-	row := db.QueryRow("SELECT * FROM Image WHERE name=$1 AND registry_id=$2", im.Name, im.RegistryId)
+	row := db.QueryRow("SELECT 'id' FROM Image WHERE name=$1 AND registry_id=$2", im.FullName, im.RegistryId)
 
 	var result Image
-	err := row.Scan(&result.ID, &result.RegistryId, &result.Name, &result.Registry, &result.Org, &result.Manifest)
+	err := row.Scan(&result.ID)
 
 	return err == nil
 }

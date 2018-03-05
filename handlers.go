@@ -13,13 +13,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ngageoint/seed-silo/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/mitchellh/mapstructure"
 	"github.com/ngageoint/seed-common/registry"
 	"github.com/ngageoint/seed-common/util"
+	"github.com/ngageoint/seed-silo/models"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +141,16 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//clear out job table
+	err = models.ResetJobTable(db)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	models.StoreImage(db, dbImages)
+	jobs := models.BuildJobsList(dbImages)
+	models.StoreJob(db, jobs)
 }
 
 func ScanRegistries(w http.ResponseWriter, r *http.Request) {
@@ -176,13 +185,22 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//clear out job table
+	err = models.ResetJobTable(db)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	models.StoreImage(db, dbImages)
+	jobs := models.BuildJobsList(dbImages)
+	models.StoreJob(db, jobs)
 }
 
 func Scan(w http.ResponseWriter, req *http.Request, registries []models.RegistryInfo) ([]models.Image, error) {
 	dbImages := []models.Image{}
 	for _, r := range registries {
-		fmt.Fprintf(w,"Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
+		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
 		registry, err := registry.CreateRegistry(r.Url, r.Org, r.Username, r.Password)
 		if err != nil {
 			humanError := checkError(err, r.Url, r.Username, r.Password)
@@ -198,13 +216,12 @@ func Scan(w http.ResponseWriter, req *http.Request, registries []models.Registry
 		images, err := registry.ImagesWithManifests()
 
 		for _, img := range images {
-			image := models.Image{Name: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest, RegistryId: r.ID}
-			dbImages = append(dbImages, image)
-			_, err := json.Marshal(img)
+			image := models.Image{FullName: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest, RegistryId: r.ID}
+			err := json.Unmarshal([]byte(img.Manifest), &image.Seed)
 			if err != nil {
-				log.Print(err)
-				continue
+				log.Printf("Error unmarshalling seed manifest for %s: %s \n", img.Name, err.Error())
 			}
+			dbImages = append(dbImages, image)
 		}
 	}
 
@@ -261,7 +278,7 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 	for _, img := range images {
 		score := 0
 		for _, term := range terms {
-			if strings.Contains(img.Name, term) {
+			if strings.Contains(img.FullName, term) {
 				score += 10
 			}
 			if strings.Contains(img.Org, term) {
@@ -375,7 +392,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	valid, err := models.ValidateUser(db, user.Username, user.Password)
-	if !valid || err != nil{
+	if !valid || err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Invalid login")
 		return
 	}
@@ -384,7 +401,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	displayuser, _ := models.GetUserByName(db, user.Username)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": displayuser.Username,
-		"role": displayuser.Role,
+		"role":     displayuser.Role,
 	})
 
 	tokenString, error := token.SignedString([]byte(TokenSecret))

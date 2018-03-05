@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"log"
+	"github.com/ngageoint/seed-common/util"
 )
 
 type Job struct {
@@ -17,16 +18,33 @@ type Job struct {
 	Description          string `db:"description"`
 }
 
+func SetJobInfo(job *Job, img Image) {
+	job.Name = img.ShortName
+	job.LatestJobVersion = img.JobVersion
+	job.LatestPackageVersion = img.PackageVersion
+	job.LatestVersionId = img.ID
+	job.Title = img.Seed.Job.Title
+	job.Maintainer = img.Seed.Job.Maintainer.Name
+	job.Email = img.Seed.Job.Maintainer.Email
+	job.Description = img.Seed.Job.Description
+}
+
 func CreateJobTable(db *sql.DB) {
-	// create table if not exists
+	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Job(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT,
+		latest_job_version TEXT,
+		latest_package_version TEXT,
 		latest_image_version_id INTEGER NOT NULL,
+		title TEXT,
+		maintainer TEXT,
+		email TEXT,
+		description TEXT,
 		CONSTRAINT fk_inv_latest_image_id
 		    FOREIGN KEY (latest_image_version_id)
-		    REFERENCES Images (id)
+		    REFERENCES Image (id)
 		    ON DELETE CASCADE
 	);
 	`
@@ -38,7 +56,7 @@ func CreateJobTable(db *sql.DB) {
 }
 
 func ResetJobTable(db *sql.DB) error {
-	// delete all images and reset the counter
+	// delete all jobs and reset the counter
 	delete := `DELETE FROM Job;`
 
 	_, err := db.Exec(delete)
@@ -54,6 +72,34 @@ func ResetJobTable(db *sql.DB) error {
 	}
 
 	return err2
+}
+
+func BuildJobsList(images []Image) []Job {
+	jobs := []Job{}
+	jobMap := make(map[string]Job)
+	for _, img := range images {
+		img.ShortName = img.Seed.Job.Name
+		img.JobVersion = img.Seed.Job.JobVersion
+		img.PackageVersion = img.Seed.Job.PackageVersion
+			job, ok := jobMap[img.ShortName]
+			if ok {
+				jv := img.JobVersion
+				pv := img.PackageVersion
+				lj := job.LatestJobVersion
+				lp := job.LatestPackageVersion
+				if jv > lj || (jv == lj && pv > lp) {
+					SetJobInfo(&job, img)
+				}
+			}
+			if !ok {
+				job = Job{}
+				SetJobInfo(&job, img)
+				jobMap[img.ShortName] = job
+				jobs = append(jobs, job)
+			}
+	}
+
+	return jobs
 }
 
 func StoreJob(db *sql.DB, jobs []Job) {
@@ -157,7 +203,7 @@ func CreateJobVersionTable(db *sql.DB) {
 		latest_package_id INTEGER NOT NULL,
 		CONSTRAINT fk_inv_latest_package_id
 		    FOREIGN KEY (latest_package_id)
-		    REFERENCES Images (id)
+		    REFERENCES Image (id)
 		    ON DELETE CASCADE
 	);
 	`
@@ -169,7 +215,7 @@ func CreateJobVersionTable(db *sql.DB) {
 }
 
 func ResetJobVersionTable(db *sql.DB) error {
-	// delete all images and reset the counter
+	// delete all job versions and reset the counter
 	delete := `DELETE FROM JobVersion;`
 
 	_, err := db.Exec(delete)

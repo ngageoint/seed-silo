@@ -178,7 +178,7 @@ func TestScanRegistry(t *testing.T) {
 	m[0].Manifest = ""
 	m[0].Seed = objects.Seed{}
 
-	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
+	testImage := models.Image{ID: 1, RegistryId: 1, FullName: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
 	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
@@ -212,7 +212,7 @@ func TestSearchImages(t *testing.T) {
 	m[0].Manifest = ""
 	m[0].Seed = objects.Seed{}
 
-	testImage := models.Image{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
+	testImage := models.Image{ID: 1, RegistryId: 1, FullName: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
 	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
