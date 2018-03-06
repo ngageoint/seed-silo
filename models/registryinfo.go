@@ -27,7 +27,7 @@ func CreateRegistryTable(db *sql.DB) {
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS RegistryInfo(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT,
+		name TEXT NOT NULL UNIQUE,
 		url TEXT,
 		org TEXT,
 		username TEXT,
@@ -43,7 +43,7 @@ func CreateRegistryTable(db *sql.DB) {
 
 func AddRegistry(db *sql.DB, r RegistryInfo) (int, error) {
 	sql_addreg := `
-	INSERT OR REPLACE INTO RegistryInfo(
+	INSERT INTO RegistryInfo(
 		name,
 		url,
 	    org,

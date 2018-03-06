@@ -148,9 +148,8 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.BuildJobsList(db, &dbImages)
 	models.StoreImage(db, dbImages)
-	jobs := models.BuildJobsList(dbImages)
-	models.StoreJob(db, jobs)
 }
 
 func ScanRegistries(w http.ResponseWriter, r *http.Request) {
@@ -192,9 +191,8 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.BuildJobsList(db, &dbImages)
 	models.StoreImage(db, dbImages)
-	jobs := models.BuildJobsList(dbImages)
-	models.StoreJob(db, jobs)
 }
 
 func Scan(w http.ResponseWriter, req *http.Request, registries []models.RegistryInfo) ([]models.Image, error) {
@@ -319,10 +317,8 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 
 	results := []models.SimpleImage{}
 	for _, res := range rankedResults {
-		simple, err := models.SimplifyImage(res.Image)
-		if err == nil {
-			results = append(results, simple)
-		}
+		simple := models.SimplifyImage(res.Image)
+		results = append(results, simple)
 	}
 
 	respondWithJSON(w, http.StatusOK, results)

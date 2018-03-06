@@ -60,7 +60,7 @@ func CreateUser(db *sql.DB) {
 
 func AddUser(db *sql.DB, r User) (int, error) {
 	sql_addreg := `
-	INSERT OR REPLACE INTO User(
+	INSERT INTO User(
 		username,
 		password,
 	    role
