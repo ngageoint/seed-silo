@@ -284,7 +284,7 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 			}
 			seed := img.Seed
 
-			if strings.Contains(fmt.Sprintf("%s", img.Seed), term) {
+			if strings.Contains(fmt.Sprintf("%v", img.Seed), term) {
 				score += 1
 			}
 

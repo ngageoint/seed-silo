@@ -146,7 +146,7 @@ func TestDeleteRegistry(t *testing.T) {
 
 	errorStr := "No registry found with that ID"
 	if m["error"] != errorStr {
-		t.Errorf("Expected error to be '%s'. Got '%v'", m["error"])
+		t.Errorf("Expected error to be '%s'. Got '%v'", errorStr, m["error"])
 	}
 
 	req, _ = http.NewRequest("DELETE", "/registry/delete/test", bytes.NewBuffer(payload))
@@ -173,12 +173,12 @@ func TestScanRegistry(t *testing.T) {
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	m := []models.Image{}
+	m := []models.SimpleImage{}
 	json.Unmarshal(response.Body.Bytes(), &m)
-	m[0].Manifest = ""
-	m[0].Seed = objects.Seed{}
 
-	testImage := models.Image{ID: 1, RegistryId: 1, FullName: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
+	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest",
+	Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "", JobVersion: "0.1.0",
+	PackageVersion: "0.1.0", Description: ""}
 	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
@@ -207,12 +207,12 @@ func TestSearchImages(t *testing.T) {
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	m := []models.Image{}
+	m := []models.SimpleImage{}
 	json.Unmarshal(response.Body.Bytes(), &m)
-	m[0].Manifest = ""
-	m[0].Seed = objects.Seed{}
 
-	testImage := models.Image{ID: 1, RegistryId: 1, FullName: "my-job-0.1.0-seed:latest", Registry: "docker.io", Org: "johnptobe"}
+	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest",
+		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "", JobVersion: "0.1.0",
+		PackageVersion: "0.1.0", Description: ""}
 	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
@@ -250,8 +250,8 @@ func TestImageManifest(t *testing.T) {
 
 	testManifest := objects.SeedFromManifestFile("seed.manifest.json")
 
-	mStr := fmt.Sprintf("%s", m)
-	testStr := fmt.Sprintf("%s", testManifest)
+	mStr := fmt.Sprintf("%v", m)
+	testStr := fmt.Sprintf("%v", testManifest)
 	if mStr != testStr {
 		t.Errorf("Expected manifest to be %v. Got '%v'", testManifest, m)
 	}

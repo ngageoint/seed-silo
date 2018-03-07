@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/ngageoint/seed-common/objects"
+	"github.com/ngageoint/seed-common/util"
 )
 
 type Image struct {
@@ -42,7 +43,7 @@ func SimplifyImage(img Image) SimpleImage {
 	simple := SimpleImage{}
 	simple.ID = img.ID
 	simple.RegistryId = img.RegistryId
-	simple.Name = img.ShortName
+	simple.Name = img.FullName
 	simple.Registry = img.Registry
 	simple.Org = img.Org
 	simple.JobName = img.ShortName
@@ -217,9 +218,13 @@ func ReadImage(db *sql.DB, id int) (Image, error) {
 	row := db.QueryRow("SELECT * FROM Image WHERE id=?", id)
 
 	var result Image
-	err := row.Scan(result.RegistryId, result.JobId, result.JobVersionId, result.FullName,
-		result.ShortName, result.Title, result.JobVersion, result.PackageVersion, result.Description,
-		result.Registry, result.Org, result.Manifest)
+	err := row.Scan(&result.ID, &result.RegistryId, &result.JobId, &result.JobVersionId, &result.FullName,
+		&result.ShortName, &result.Title, &result.JobVersion, &result.PackageVersion, &result.Description,
+		&result.Registry, &result.Org, &result.Manifest)
+
+	if err != nil {
+		util.PrintUtil("ERROR scanning in read image: %v", err.Error())
+	}
 
 	if err == nil {
 		err = json.Unmarshal([]byte(result.Manifest), &result.Seed)
