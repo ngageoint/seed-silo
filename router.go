@@ -20,6 +20,8 @@ var handler = map[string]http.HandlerFunc{
 	"SearchImages": SearchImages,
 	"Image": Image,
 	"ImageManifest": ImageManifest,
+	"ListJobs": ListJobs,
+	"Job": Job,
 	"Login": Login,
 	"User": User,
 	"AddUser": Validate([]string{"admin"}, AddUser),

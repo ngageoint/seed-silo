@@ -2,9 +2,10 @@ package models
 
 import (
 	"database/sql"
+	"log"
+	"strings"
 
 	"github.com/ngageoint/seed-common/util"
-	"strings"
 )
 
 type Job struct {
@@ -16,6 +17,8 @@ type Job struct {
 	Maintainer           string `db:"maintainer"`
 	Email                string `db:"email"`
 	Description          string `db:"description"`
+	ImageIDs             []int
+	JobVersions          []JobVersion
 }
 
 func SetJobInfo(job *Job, img Image) {
@@ -127,7 +130,7 @@ func BuildJobsList(db *sql.DB, images *[]Image) []Job {
 			}
 		}
 		if !ok {
-			jobVersion = JobVersion{MajorVersion:major}
+			jobVersion = JobVersion{MajorVersion: major}
 			SetJobVersionInfo(&jobVersion, *img)
 
 			id, err := AddJobVersion(db, jobVersion)
@@ -253,6 +256,9 @@ func ReadJobs(db *sql.DB) []Job {
 			panic(err2)
 		}
 
+		item.ImageIDs = GetJobImageIds(db, item.ID)
+		item.JobVersions = GetJobVersions(db, item.ID)
+
 		result = append(result, item)
 	}
 
@@ -282,6 +288,7 @@ type JobVersion struct {
 	JobId                int    `db:"job_id"`
 	LatestJobVersion     string `db:"latest_job_version"`
 	LatestPackageVersion string `db:"latest_package_version"`
+	Images               []SimpleImage
 }
 
 func SetJobVersionInfo(jv *JobVersion, img Image) {
@@ -407,6 +414,8 @@ func ReadJobVersions(db *sql.DB, jobId int) []JobVersion {
 			panic(err2)
 		}
 
+		item.Images = GetJobVersionImages(db, item.ID)
+
 		result = append(result, item)
 	}
 
@@ -426,4 +435,32 @@ func ReadJobVersion(db *sql.DB, id int) (JobVersion, error) {
 	}
 
 	return result, err
+}
+
+func GetJobVersions(db *sql.DB, jobid int) []JobVersion {
+	sql_readall := `SELECT * FROM JobVersion WHERE job_id=?`
+
+	rows, err := db.Query(sql_readall, jobid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var result []JobVersion
+	for rows.Next() {
+		item := JobVersion{}
+		err2 := rows.Scan(&item.ID, &item.JobName, &item.MajorVersion, &item.JobId, &item.LatestJobVersion, &item.LatestPackageVersion)
+		if err2 != nil {
+			panic(err2)
+		}
+
+		item.Images = GetJobVersionImages(db, item.ID)
+
+		result = append(result, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return result
 }

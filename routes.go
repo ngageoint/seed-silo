@@ -63,6 +63,16 @@ var routes = []Route{
 		"/images/{id}/manifest",
 	},
 	Route{
+		"ListJobs",
+		"GET",
+		"/jobs",
+	},
+	Route{
+		"Job",
+		"GET",
+		"/jobs/{id}",
+	},
+	Route{
 		"Login",
 		"POST",
 		"/login",

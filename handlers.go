@@ -219,6 +219,11 @@ func Scan(w http.ResponseWriter, req *http.Request, registries []models.Registry
 			if err != nil {
 				log.Printf("Error unmarshalling seed manifest for %s: %s \n", img.Name, err.Error())
 			}
+			image.ShortName = image.Seed.Job.Name
+			image.Title = image.Seed.Job.Title
+			image.JobVersion = image.Seed.Job.JobVersion
+			image.PackageVersion = image.Seed.Job.PackageVersion
+			image.Description = image.Seed.Job.Description
 			dbImages = append(dbImages, image)
 		}
 	}
@@ -367,6 +372,38 @@ func ImageManifest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, image.Seed)
+}
+
+func ListJobs(w http.ResponseWriter, r *http.Request) {
+	jobList := []models.Job{}
+	jobs := models.ReadJobs(db)
+	jobList = append(jobList, jobs...)
+
+	respondWithJSON(w, http.StatusOK, jobList)
+}
+
+func Job(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	job, err := models.ReadJob(db, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			respondWithError(w, http.StatusNotFound, "No job found with that ID")
+			return
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+	job.ImageIDs = models.GetJobImageIds(db, job.ID)
+	job.JobVersions = models.GetJobVersions(db, job.ID)
+
+	respondWithJSON(w, http.StatusOK, job)
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {

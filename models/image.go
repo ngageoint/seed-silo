@@ -16,10 +16,10 @@ type Image struct {
 	JobVersionId   int    `db:"job_version_id"`
 	FullName       string `db:"full_name"`  //full name from registry (may include org et. al.)
 	ShortName      string `db:"short_name"` //job name from seed manifest
-	Title string `db:"title"`
+	Title          string `db:"title"`
 	JobVersion     string `db:"job_version"`
 	PackageVersion string `db:"package_version"`
-	Description string `db:"description"`
+	Description    string `db:"description"`
 	Registry       string `db:"registry"`
 	Org            string `db:"org"`
 	Manifest       string `db:"manifest"`
@@ -139,7 +139,7 @@ func StoreImage(db *sql.DB, images []Image) {
 	for _, img := range images {
 		_, err2 := stmt.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
 			img.ShortName, img.Title, img.JobVersion, img.PackageVersion, img.Description,
-				img.Registry, img.Org, img.Manifest)
+			img.Registry, img.Org, img.Manifest)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -201,7 +201,7 @@ func ReadSimpleImages(db *sql.DB) []SimpleImage {
 		var manifest string
 		err2 := rows.Scan(&item.ID, &item.RegistryId, &img.JobId, &img.JobVersionId, &item.Name,
 			&item.JobName, &item.Title, &item.JobVersion, &item.PackageVersion, &item.Description,
-				&item.Registry, &item.Org, &manifest)
+			&item.Registry, &item.Org, &manifest)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -250,4 +250,112 @@ func ImageExists(db *sql.DB, im Image) bool {
 	err := row.Scan(&result.ID)
 
 	return err == nil
+}
+
+func GetJobImageIds(db *sql.DB, jobid int) []int {
+	sql_readall := `SELECT ID FROM Image WHERE job_id=?`
+
+	rows, err := db.Query(sql_readall, jobid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var result []int
+	for rows.Next() {
+		var id int
+		err2 := rows.Scan(&id)
+		if err2 != nil {
+			panic(err2)
+		}
+		result = append(result, id)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return result
+}
+
+func GetJobImages(db *sql.DB, jobid int) []SimpleImage {
+	sql_readall := `SELECT * FROM Image WHERE job_id=?`
+
+	rows, err := db.Query(sql_readall, jobid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var result []SimpleImage
+	for rows.Next() {
+		item := SimpleImage{}
+		img := Image{}
+		var manifest string
+		err2 := rows.Scan(&item.ID, &item.RegistryId, &img.JobId, &img.JobVersionId, &item.Name,
+			&item.JobName, &item.Title, &item.JobVersion, &item.PackageVersion, &item.Description,
+			&item.Registry, &item.Org, &manifest)
+		if err2 != nil {
+			panic(err2)
+		}
+		result = append(result, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return result
+}
+
+func GetJobVersionImageIds(db *sql.DB, jobversionid int) []int {
+	sql_readall := `SELECT ID FROM Image WHERE job_version_id=?`
+
+	rows, err := db.Query(sql_readall, jobversionid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var result []int
+	for rows.Next() {
+		var id int
+		err2 := rows.Scan(&id)
+		if err2 != nil {
+			panic(err2)
+		}
+		result = append(result, id)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return result
+}
+
+func GetJobVersionImages(db *sql.DB, jobversionid int) []SimpleImage {
+	sql_readall := `SELECT * FROM Image WHERE job_version_id=?`
+
+	rows, err := db.Query(sql_readall, jobversionid)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var result []SimpleImage
+	for rows.Next() {
+		item := SimpleImage{}
+		img := Image{}
+		var manifest string
+		err2 := rows.Scan(&item.ID, &item.RegistryId, &img.JobId, &img.JobVersionId, &item.Name,
+			&item.JobName, &item.Title, &item.JobVersion, &item.PackageVersion, &item.Description,
+			&item.Registry, &item.Org, &manifest)
+		if err2 != nil {
+			panic(err2)
+		}
+		result = append(result, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return result
 }
