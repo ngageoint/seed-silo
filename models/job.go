@@ -278,6 +278,9 @@ func ReadJob(db *sql.DB, id int) (Job, error) {
 		panic(err)
 	}
 
+	result.ImageIDs = GetJobImageIds(db, result.ID)
+	result.JobVersions = GetJobVersions(db, result.ID)
+
 	return result, err
 }
 
