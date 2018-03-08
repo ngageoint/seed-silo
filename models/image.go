@@ -112,7 +112,7 @@ func ResetImageTable(db *sql.DB) error {
 	return err2
 }
 
-func StoreImage(db *sql.DB, images []Image) {
+func StoreImages(db *sql.DB, images []Image) {
 	sql_addimg := `
 	INSERT INTO Image(
 	    registry_id,
@@ -146,7 +146,30 @@ func StoreImage(db *sql.DB, images []Image) {
 	}
 }
 
-func UpdateImages(db *sql.DB, images []Image) {
+func StoreOrUpdateImages(db *sql.DB, images []Image) {
+	sql_add_img := `
+	INSERT INTO Image(
+	    registry_id,
+	    job_id,
+	    job_version_id,
+	    full_name,
+		short_name,
+		title,
+		job_version,
+		package_version,
+		description,
+		registry,
+		org,
+		manifest
+	) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	addStatement, err := db.Prepare(sql_add_img)
+	if err != nil {
+		panic(err)
+	}
+	defer addStatement.Close()
+
 	sql_update_img := `
 	UPDATE Image SET
 	    registry_id=?,
@@ -164,18 +187,27 @@ func UpdateImages(db *sql.DB, images []Image) {
 	WHERE id=?
 	`
 
-	stmt, err := db.Prepare(sql_update_img)
+	updateStatement, err := db.Prepare(sql_update_img)
 	if err != nil {
 		panic(err)
 	}
-	defer stmt.Close()
+	defer updateStatement.Close()
 
 	for _, img := range images {
-		_, err2 := stmt.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
-			img.ShortName, img.Title, img.JobVersion, img.PackageVersion, img.Description,
-			img.Registry, img.Org, img.Manifest, img.ID)
-		if err2 != nil {
-			panic(err2)
+		if img.ID != 0 {
+			_, err2 := updateStatement.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
+				img.ShortName, img.Title, img.JobVersion, img.PackageVersion, img.Description,
+				img.Registry, img.Org, img.Manifest, img.ID)
+			if err2 != nil {
+				panic(err2)
+			}
+		} else {
+			_, err2 := addStatement.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
+				img.ShortName, img.Title, img.JobVersion, img.PackageVersion, img.Description,
+				img.Registry, img.Org, img.Manifest)
+			if err2 != nil {
+				panic(err2)
+			}
 		}
 	}
 }
