@@ -146,6 +146,40 @@ func StoreImage(db *sql.DB, images []Image) {
 	}
 }
 
+func UpdateImages(db *sql.DB, images []Image) {
+	sql_update_img := `
+	UPDATE Image SET
+	    registry_id=?,
+	    job_id=?,
+	    job_version_id=?,
+	    full_name=?,
+		short_name=?,
+		title=?,
+		job_version=?,
+		package_version=?,
+		description=?,
+		registry=?,
+		org=?,
+		manifest=?
+	WHERE id=?
+	`
+
+	stmt, err := db.Prepare(sql_update_img)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+
+	for _, img := range images {
+		_, err2 := stmt.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
+			img.ShortName, img.Title, img.JobVersion, img.PackageVersion, img.Description,
+			img.Registry, img.Org, img.Manifest, img.ID)
+		if err2 != nil {
+			panic(err2)
+		}
+	}
+}
+
 func ReadImages(db *sql.DB) []Image {
 	sql_readall := `
 	SELECT * FROM Image
