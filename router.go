@@ -18,6 +18,7 @@ var handler = map[string]http.HandlerFunc{
 	"ScanRegistry": Validate([]string{"admin"}, ScanRegistry),
 	"ListImages": ListImages,
 	"SearchImages": SearchImages,
+	"SearchJobs": SearchJobs,
 	"Image": Image,
 	"ImageManifest": ImageManifest,
 	"ListJobs": ListJobs,

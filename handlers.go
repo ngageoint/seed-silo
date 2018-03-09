@@ -292,6 +292,76 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	query := vars["query"]
 
+	if query == "" || query == "+" {
+		ListImages(w, r)
+		return
+	}
+
+	terms := strings.Split(query, "+")
+
+	images := models.ReadImages(db)
+
+	rankedResults := []RankedResult{}
+	for _, img := range images {
+		score := 0
+		for _, term := range terms {
+			if strings.Contains(img.FullName, term) {
+				score += 10
+			}
+			if strings.Contains(img.Org, term) {
+				score += 10
+			}
+			seed := img.Seed
+
+			if strings.Contains(fmt.Sprintf("%v", img.Seed), term) {
+				score += 1
+			}
+
+			if strings.Contains(seed.Job.Name, term) {
+				score += 10
+			}
+			if strings.Contains(seed.Job.Title, term) {
+				score += 5
+			}
+
+			if strings.Contains(seed.Job.Description, term) {
+				score += 5
+			}
+
+			if strings.Contains(fmt.Sprintf("%s", seed.Job.Tags), term) {
+				score += 10
+			}
+
+			if strings.Contains(fmt.Sprintf("%s", seed.Job.Maintainer), term) {
+				score += 5
+			}
+
+		}
+		if score > 0 {
+			rankedResults = append(rankedResults, RankedResult{Score: score, Image: img})
+		}
+	}
+
+	sort.Sort(ByScore(rankedResults))
+
+	results := []models.SimpleImage{}
+	for _, res := range rankedResults {
+		simple := models.SimplifyImage(res.Image)
+		results = append(results, simple)
+	}
+
+	respondWithJSON(w, http.StatusOK, results)
+}
+
+func SearchJobs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	query := vars["query"]
+
+	if query == "" || query == "+" {
+		ListJobs(w, r)
+		return
+	}
+
 	terms := strings.Split(query, "+")
 
 	images := models.ReadImages(db)
@@ -340,9 +410,14 @@ func SearchImages(w http.ResponseWriter, r *http.Request) {
 	sort.Sort(ByScore(rankedResults))
 
 	results := []models.Job{}
+	jobMap := make(map[int]int)
 	for _, res := range rankedResults {
 		job, _ := models.ReadJob(db, res.Image.JobId)
-		results = append(results, job)
+		_, ok := jobMap[res.Image.JobId]
+		if !ok {
+			results = append(results, job)
+			jobMap[res.Image.JobId] = 1
+		}
 	}
 
 	respondWithJSON(w, http.StatusOK, results)

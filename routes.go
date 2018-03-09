@@ -15,17 +15,17 @@ var routes = []Route{
 	Route{
 		"Registry",
 		"GET",
-		"/registry/{id}",
+		"/registries/{id}",
 	},
 	Route{
 		"AddRegistry",
 		"POST",
-		"/registry/add",
+		"/registries/add",
 	},
 	Route{
 		"DeleteRegistry",
 		"DELETE",
-		"/registry/delete/{id}",
+		"/registries/delete/{id}",
 	},
 	Route{
 		"ListRegistries",
@@ -40,7 +40,7 @@ var routes = []Route{
 	Route{
 		"ScanRegistry",
 		"GET",
-		"/registry/{id}/scan",
+		"/registries/{id}/scan",
 	},
 	Route{
 		"ListImages",
@@ -51,6 +51,11 @@ var routes = []Route{
 		"SearchImages",
 		"GET",
 		"/images/search/{query}",
+	},
+	Route{
+		"SearchJobs",
+		"GET",
+		"/jobs/search/{query}",
 	},
 	Route{
 		"Image",
@@ -80,17 +85,17 @@ var routes = []Route{
 	Route{
 		"User",
 		"GET",
-		"/user/{id}",
+		"/users/{id}",
 	},
 	Route{
 		"AddUser",
 		"POST",
-		"/user/add",
+		"/users/add",
 	},
 	Route{
 		"DeleteUser",
 		"DELETE",
-		"/user/delete/{id}",
+		"/users/delete/{id}",
 	},
 	Route{
 		"ListUsers",
