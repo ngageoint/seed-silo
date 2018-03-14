@@ -1,9 +1,9 @@
 package main
 
 type Route struct {
-	Name        string
-	Method      string
-	Pattern     string
+	Name    string
+	Method  string
+	Pattern string
 }
 
 var routes = []Route{
@@ -15,7 +15,7 @@ var routes = []Route{
 	Route{
 		"Registry",
 		"GET",
-		"/registries/{id}",
+		"/registry/{id}",
 	},
 	Route{
 		"AddRegistry",
@@ -40,7 +40,7 @@ var routes = []Route{
 	Route{
 		"ScanRegistry",
 		"GET",
-		"/registries/{id}/scan",
+		"/registry/{id}/scan",
 	},
 	Route{
 		"ListImages",

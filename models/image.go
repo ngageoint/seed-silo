@@ -17,6 +17,9 @@ type Image struct {
 	FullName       string `db:"full_name"`  //full name from registry (may include org et. al.)
 	ShortName      string `db:"short_name"` //job name from seed manifest
 	Title          string `db:"title"`
+	Maintainer     string `db:"maintainer"`
+	Email          string `db:"email"`
+	MaintOrg       string `db:"maint_org"`
 	JobVersion     string `db:"job_version"`
 	PackageVersion string `db:"package_version"`
 	Description    string `db:"description"`
@@ -34,9 +37,12 @@ type SimpleImage struct {
 	Org            string
 	JobName        string
 	Title          string
+	Maintainer     string
+	Email          string
+	MaintOrg       string
+	Description    string
 	JobVersion     string
 	PackageVersion string
-	Description    string
 }
 
 func SimplifyImage(img Image) SimpleImage {
@@ -48,9 +54,12 @@ func SimplifyImage(img Image) SimpleImage {
 	simple.Org = img.Org
 	simple.JobName = img.ShortName
 	simple.Title = img.Title
+	simple.Maintainer = img.Maintainer
+	simple.Email = img.Email
+	simple.MaintOrg = img.MaintOrg
+	simple.Description = img.Description
 	simple.JobVersion = img.JobVersion
 	simple.PackageVersion = img.PackageVersion
-	simple.Description = img.Description
 
 	return simple
 }
@@ -66,6 +75,9 @@ func CreateImageTable(db *sql.DB) {
 		full_name TEXT,
 		short_name TEXT,
 		title TEXT,
+		maintainer TEXT,
+		email TEXT,
+		maint_org TEXT,
 		job_version TEXT,
 		package_version TEXT,
 		description TEXT,
@@ -121,13 +133,16 @@ func StoreImages(db *sql.DB, images []Image) {
 	    full_name,
 		short_name,
 		title,
+		maintainer,
+		email,
+		maint_org,
 		job_version,
 		package_version,
 		description,
 		registry,
 		org,
 		manifest
-	) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	stmt, err := db.Prepare(sql_addimg)
@@ -138,8 +153,9 @@ func StoreImages(db *sql.DB, images []Image) {
 
 	for _, img := range images {
 		_, err2 := stmt.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
-			img.ShortName, img.Title, img.JobVersion, img.PackageVersion, img.Description,
-			img.Registry, img.Org, img.Manifest)
+			img.ShortName, img.Title, img.Maintainer, img.Email, img.MaintOrg,
+			img.JobVersion, img.PackageVersion, img.Description, img.Registry,
+			img.Org, img.Manifest)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -155,13 +171,16 @@ func StoreOrUpdateImages(db *sql.DB, images []Image) {
 	    full_name,
 		short_name,
 		title,
+		maintainer,
+		email,
+		maint_org,
 		job_version,
 		package_version,
 		description,
 		registry,
 		org,
 		manifest
-	) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	addStatement, err := db.Prepare(sql_add_img)
@@ -178,6 +197,9 @@ func StoreOrUpdateImages(db *sql.DB, images []Image) {
 	    full_name=?,
 		short_name=?,
 		title=?,
+		maintainer=?,
+		email=?,
+		maint_org=?,
 		job_version=?,
 		package_version=?,
 		description=?,
@@ -196,15 +218,15 @@ func StoreOrUpdateImages(db *sql.DB, images []Image) {
 	for _, img := range images {
 		if img.ID != 0 {
 			_, err2 := updateStatement.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
-				img.ShortName, img.Title, img.JobVersion, img.PackageVersion, img.Description,
-				img.Registry, img.Org, img.Manifest, img.ID)
+				img.ShortName, img.Title, img.Maintainer, img.Email, img.MaintOrg, img.JobVersion,
+				img.PackageVersion, img.Description, img.Registry, img.Org, img.Manifest, img.ID)
 			if err2 != nil {
 				panic(err2)
 			}
 		} else {
 			_, err2 := addStatement.Exec(img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
-				img.ShortName, img.Title, img.JobVersion, img.PackageVersion, img.Description,
-				img.Registry, img.Org, img.Manifest)
+				img.ShortName, img.Title, img.Maintainer, img.Email, img.MaintOrg, img.JobVersion,
+				img.PackageVersion, img.Description, img.Registry, img.Org, img.Manifest)
 			if err2 != nil {
 				panic(err2)
 			}
@@ -228,8 +250,8 @@ func ReadImages(db *sql.DB) []Image {
 	for rows.Next() {
 		item := Image{}
 		err2 := rows.Scan(&item.ID, &item.RegistryId, &item.JobId, &item.JobVersionId, &item.FullName,
-			&item.ShortName, &item.Title, &item.JobVersion, &item.PackageVersion, &item.Description,
-			&item.Registry, &item.Org, &item.Manifest)
+			&item.ShortName, &item.Title, &item.Maintainer, &item.Email, &item.MaintOrg, &item.JobVersion,
+			&item.PackageVersion, &item.Description, &item.Registry, &item.Org, &item.Manifest)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -266,7 +288,8 @@ func ReadSimpleImages(db *sql.DB) []SimpleImage {
 		img := Image{}
 		var manifest string
 		err2 := rows.Scan(&item.ID, &item.RegistryId, &img.JobId, &img.JobVersionId, &item.Name,
-			&item.JobName, &item.Title, &item.JobVersion, &item.PackageVersion, &item.Description,
+			&item.JobName, &item.Title, &item.Maintainer, &item.Email, &item.MaintOrg,
+			&item.JobVersion, &item.PackageVersion, &item.Description,
 			&item.Registry, &item.Org, &manifest)
 		if err2 != nil {
 			panic(err2)
@@ -284,8 +307,9 @@ func ReadImage(db *sql.DB, id int) (Image, error) {
 	row := db.QueryRow("SELECT * FROM Image WHERE id=?", id)
 
 	var result Image
-	err := row.Scan(&result.ID, &result.RegistryId, &result.JobId, &result.JobVersionId, &result.FullName,
-		&result.ShortName, &result.Title, &result.JobVersion, &result.PackageVersion, &result.Description,
+	err := row.Scan(&result.ID, &result.RegistryId, &result.JobId, &result.JobVersionId,
+		&result.FullName, &result.ShortName, &result.Title, &result.Maintainer, &result.Email,
+		&result.MaintOrg, &result.JobVersion, &result.PackageVersion, &result.Description,
 		&result.Registry, &result.Org, &result.Manifest)
 
 	if err != nil {
@@ -358,8 +382,8 @@ func GetJobImages(db *sql.DB, jobid int) []SimpleImage {
 		img := Image{}
 		var manifest string
 		err2 := rows.Scan(&item.ID, &item.RegistryId, &img.JobId, &img.JobVersionId, &item.Name,
-			&item.JobName, &item.Title, &item.JobVersion, &item.PackageVersion, &item.Description,
-			&item.Registry, &item.Org, &manifest)
+			&item.JobName, &item.Title, &item.Maintainer, &item.Email, &item.MaintOrg,
+			&item.JobVersion, &item.PackageVersion, &item.Description, &item.Registry, &item.Org, &manifest)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -412,8 +436,8 @@ func GetJobVersionImages(db *sql.DB, jobversionid int) []SimpleImage {
 		img := Image{}
 		var manifest string
 		err2 := rows.Scan(&item.ID, &item.RegistryId, &img.JobId, &img.JobVersionId, &item.Name,
-			&item.JobName, &item.Title, &item.JobVersion, &item.PackageVersion, &item.Description,
-			&item.Registry, &item.Org, &manifest)
+			&item.JobName, &item.Title, &item.Maintainer, &item.Email, &item.MaintOrg,
+			&item.JobVersion, &item.PackageVersion, &item.Description, &item.Registry, &item.Org, &manifest)
 		if err2 != nil {
 			panic(err2)
 		}

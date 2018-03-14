@@ -240,6 +240,9 @@ func Scan(w http.ResponseWriter, req *http.Request, registries []models.Registry
 			}
 			image.ShortName = image.Seed.Job.Name
 			image.Title = image.Seed.Job.Title
+			image.Maintainer = image.Seed.Job.Maintainer.Name
+			image.Email = image.Seed.Job.Maintainer.Email
+			image.MaintOrg = image.Seed.Job.Maintainer.Organization
 			image.JobVersion = image.Seed.Job.JobVersion
 			image.PackageVersion = image.Seed.Job.PackageVersion
 			image.Description = image.Seed.Job.Description
@@ -410,17 +413,20 @@ func SearchJobs(w http.ResponseWriter, r *http.Request) {
 	sort.Sort(ByScore(rankedResults))
 
 	results := []models.Job{}
-	jobMap := make(map[int]int)
+	jobMap := make(map[int]models.Job)
 	for _, res := range rankedResults {
 		job, _ := models.ReadJob(db, res.Image.JobId)
-		_, ok := jobMap[res.Image.JobId]
+		job1, ok := jobMap[res.Image.JobId]
 		if !ok {
 			results = append(results, job)
-			jobMap[res.Image.JobId] = 1
+			job.ImageIDs = append(job.ImageIDs, res.Image.ID)
+			jobMap[res.Image.JobId] = job
+		} else {
+			job1.ImageIDs = append(job1.ImageIDs, res.Image.ID)
 		}
 	}
 
-	respondWithJSON(w, http.StatusOK, results)
+	respondWithJSON(w, http.StatusOK, jobMap)
 }
 
 func Image(w http.ResponseWriter, r *http.Request) {

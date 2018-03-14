@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"log"
-	"strings"
 
 	"github.com/ngageoint/seed-common/util"
 )
@@ -16,6 +15,7 @@ type Job struct {
 	Title                string `db:"title"`
 	Maintainer           string `db:"maintainer"`
 	Email                string `db:"email"`
+	MaintOrg             string `db:"maint_org"`
 	Description          string `db:"description"`
 	ImageIDs             []int
 	JobVersions          []JobVersion
@@ -26,9 +26,10 @@ func SetJobInfo(job *Job, img Image) {
 	job.LatestJobVersion = img.JobVersion
 	job.LatestPackageVersion = img.PackageVersion
 	job.Title = img.Seed.Job.Title
-	job.Maintainer = img.Seed.Job.Maintainer.Name
-	job.Email = img.Seed.Job.Maintainer.Email
-	job.Description = img.Seed.Job.Description
+	job.Maintainer = img.Maintainer
+	job.Email = img.Email
+	job.MaintOrg = img.MaintOrg
+	job.Description = img.Description
 }
 
 func CreateJobTable(db *sql.DB) {
@@ -42,6 +43,7 @@ func CreateJobTable(db *sql.DB) {
 		title TEXT,
 		maintainer TEXT,
 		email TEXT,
+		maint_org TEXT,
 		description TEXT
 	);
 	`
@@ -83,13 +85,7 @@ func BuildJobsList(db *sql.DB, images *[]Image) []Job {
 		img.JobVersion = img.Seed.Job.JobVersion
 		img.PackageVersion = img.Seed.Job.PackageVersion
 
-		temp := strings.Split(img.JobVersion, ".")
-		if len(temp) != 3 {
-			util.PrintUtil("ERROR: Invalid version string for image %v: %v", img.FullName, img.JobVersion)
-			continue
-		}
-		major := temp[0]
-		versionName := img.ShortName + temp[0]
+		versionName := img.ShortName + img.JobVersion
 
 		job, ok := jobMap[img.ShortName]
 		if ok {
@@ -120,17 +116,15 @@ func BuildJobsList(db *sql.DB, images *[]Image) []Job {
 
 		jobVersion, ok := jvMap[versionName]
 		if ok {
-			jv := img.JobVersion
 			pv := img.PackageVersion
-			lj := jobVersion.LatestJobVersion
 			lp := jobVersion.LatestPackageVersion
-			if jv > lj || (jv == lj && pv > lp) {
+			if pv > lp {
 				SetJobVersionInfo(&jobVersion, *img)
 				UpdateJobVersion(db, jobVersion)
 			}
 		}
 		if !ok {
-			jobVersion = JobVersion{MajorVersion: major}
+			jobVersion = JobVersion{}
 			SetJobVersionInfo(&jobVersion, *img)
 
 			id, err := AddJobVersion(db, jobVersion)
@@ -159,8 +153,9 @@ func AddJob(db *sql.DB, job Job) (int, error) {
 		title,
 		maintainer,
 		email,
+		maint_org,
 		description
-	) values(?, ?, ?, ?, ?, ?, ?)
+	) values(?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	stmt, err := db.Prepare(sql_add)
@@ -170,7 +165,7 @@ func AddJob(db *sql.DB, job Job) (int, error) {
 	defer stmt.Close()
 
 	result, err := stmt.Exec(job.Name, job.LatestJobVersion, job.LatestPackageVersion,
-		job.Title, job.Maintainer, job.Email, job.Description)
+		job.Title, job.Maintainer, job.Email, job.MaintOrg, job.Description)
 	if err != nil {
 		return -1, err
 	}
@@ -192,6 +187,7 @@ func UpdateJob(db *sql.DB, job Job) error {
 		title=?,
 		maintainer=?,
 		email=?,
+		maint_org=?,
 		description=?
 		where id=?`
 
@@ -202,7 +198,7 @@ func UpdateJob(db *sql.DB, job Job) error {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(job.LatestJobVersion, job.LatestPackageVersion,
-		job.Title, job.Maintainer, job.Email, job.Description, job.ID)
+		job.Title, job.Maintainer, job.Email, job.MaintOrg, job.Description, job.ID)
 
 	return err
 }
@@ -228,7 +224,7 @@ func StoreJobs(db *sql.DB, jobs []Job) {
 
 	for _, job := range jobs {
 		_, err2 := stmt.Exec(job.Name, job.LatestJobVersion, job.LatestPackageVersion,
-			job.Title, job.Maintainer, job.Email, job.Description)
+			job.Title, job.Maintainer, job.Email, job.MaintOrg, job.Description)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -251,7 +247,7 @@ func ReadJobs(db *sql.DB) []Job {
 	for rows.Next() {
 		item := Job{}
 		err2 := rows.Scan(&item.ID, &item.Name, &item.LatestJobVersion, &item.LatestPackageVersion,
-			&item.Title, &item.Maintainer, &item.Email, &item.Description)
+			&item.Title, &item.Maintainer, &item.Email, &item.MaintOrg, &item.Description)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -273,13 +269,10 @@ func ReadJob(db *sql.DB, id int) (Job, error) {
 
 	var result Job
 	err := row.Scan(&result.ID, &result.Name, &result.LatestJobVersion, &result.LatestPackageVersion,
-		&result.Title, &result.Maintainer, &result.Email, &result.Description)
+		&result.Title, &result.Maintainer, &result.Email, &result.MaintOrg, &result.Description)
 	if err != nil {
 		panic(err)
 	}
-
-	result.ImageIDs = GetJobImageIds(db, result.ID)
-	result.JobVersions = GetJobVersions(db, result.ID)
 
 	return result, err
 }
@@ -287,18 +280,16 @@ func ReadJob(db *sql.DB, id int) (Job, error) {
 type JobVersion struct {
 	ID                   int    `db:"id"`
 	JobName              string `db:"job_name"`
-	MajorVersion         string `db:"major_version"`
 	JobId                int    `db:"job_id"`
-	LatestJobVersion     string `db:"latest_job_version"`
+	JobVersion           string `db:"job_version"`
 	LatestPackageVersion string `db:"latest_package_version"`
 	Images               []SimpleImage
 }
 
 func SetJobVersionInfo(jv *JobVersion, img Image) {
 	jv.JobName = img.ShortName
-	jv.MajorVersion = img.JobVersion
 	jv.JobId = img.JobId
-	jv.LatestJobVersion = img.JobVersion
+	jv.JobVersion = img.JobVersion
 	jv.LatestPackageVersion = img.PackageVersion
 }
 
@@ -308,11 +299,10 @@ func CreateJobVersionTable(db *sql.DB) {
 	CREATE TABLE IF NOT EXISTS JobVersion(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		job_name TEXT,
-		major_version TEXT,
 		job_id INTEGER NOT NULL,
-		latest_job_version TEXT,
+		job_version TEXT,
 		latest_package_version TEXT,
-		UNIQUE(job_name, major_version),
+		UNIQUE(job_name, job_version),
 		CONSTRAINT fk_inv_job_id
 		    FOREIGN KEY (job_id)
 		    REFERENCES Job (id)
@@ -349,11 +339,10 @@ func AddJobVersion(db *sql.DB, jv JobVersion) (int, error) {
 	sql_add := `
 	INSERT INTO JobVersion(
 		job_name,
-		major_version,
 		job_id,
-		latest_job_version,
+		job_version,
 		latest_package_version
-	) values(?, ?, ?, ?, ?)
+	) values(?, ?, ?, ?)
 	`
 
 	stmt, err := db.Prepare(sql_add)
@@ -362,7 +351,7 @@ func AddJobVersion(db *sql.DB, jv JobVersion) (int, error) {
 	}
 	defer stmt.Close()
 
-	result, err := stmt.Exec(jv.JobName, jv.MajorVersion, jv.JobId, jv.LatestJobVersion, jv.LatestPackageVersion)
+	result, err := stmt.Exec(jv.JobName, jv.JobId, jv.JobVersion, jv.LatestPackageVersion)
 	if err != nil {
 		return -1, err
 	}
@@ -380,9 +369,8 @@ func AddJobVersion(db *sql.DB, jv JobVersion) (int, error) {
 func UpdateJobVersion(db *sql.DB, jv JobVersion) error {
 	sql_update := `UPDATE JobVersion SET 
 		job_name=?,
-		major_version=?,
 		job_id=?,
-		latest_job_version=?,
+		job_version=?,
 		latest_package_version=?
 		where id=?`
 
@@ -392,14 +380,14 @@ func UpdateJobVersion(db *sql.DB, jv JobVersion) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(jv.JobName, jv.MajorVersion, jv.JobId, jv.LatestJobVersion, jv.LatestPackageVersion)
+	_, err = stmt.Exec(jv.JobName, jv.JobId, jv.JobVersion, jv.LatestPackageVersion)
 
 	return err
 }
 
 func ReadJobVersions(db *sql.DB, jobId int) []JobVersion {
 	sql_read := `
-	SELECT * FROM JobVersion WHERE job_id =?
+	SELECT * FROM JobVersion WHERE job_id=?
 	ORDER BY id ASC
 	`
 
@@ -412,7 +400,7 @@ func ReadJobVersions(db *sql.DB, jobId int) []JobVersion {
 	var result []JobVersion
 	for rows.Next() {
 		item := JobVersion{}
-		err2 := rows.Scan(&item.ID, &item.JobName, &item.MajorVersion, &item.JobId, &item.LatestJobVersion, &item.LatestPackageVersion)
+		err2 := rows.Scan(&item.ID, &item.JobName, &item.JobId, &item.JobVersion, &item.LatestPackageVersion)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -432,7 +420,7 @@ func ReadJobVersion(db *sql.DB, id int) (JobVersion, error) {
 	row := db.QueryRow("SELECT * FROM JobVersion WHERE id=?", id)
 
 	var result JobVersion
-	err := row.Scan(&result.ID, &result.JobName, &result.MajorVersion, &result.JobId, &result.LatestJobVersion, &result.LatestPackageVersion)
+	err := row.Scan(&result.ID, &result.JobName, &result.JobId, &result.JobVersion, &result.LatestPackageVersion)
 	if err != nil {
 		return result, err
 	}
@@ -452,7 +440,7 @@ func GetJobVersions(db *sql.DB, jobid int) []JobVersion {
 	var result []JobVersion
 	for rows.Next() {
 		item := JobVersion{}
-		err2 := rows.Scan(&item.ID, &item.JobName, &item.MajorVersion, &item.JobId, &item.LatestJobVersion, &item.LatestPackageVersion)
+		err2 := rows.Scan(&item.ID, &item.JobName, &item.JobId, &item.JobVersion, &item.LatestPackageVersion)
 		if err2 != nil {
 			panic(err2)
 		}
