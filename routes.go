@@ -13,11 +13,6 @@ var routes = []Route{
 		"/",
 	},
 	Route{
-		"Registry",
-		"GET",
-		"/registry/{id}",
-	},
-	Route{
 		"AddRegistry",
 		"POST",
 		"/registries/add",
@@ -38,9 +33,14 @@ var routes = []Route{
 		"/registries/scan",
 	},
 	Route{
+		"Registry",
+		"GET",
+		"/registries/{id}",
+	},
+	Route{
 		"ScanRegistry",
 		"GET",
-		"/registry/{id}/scan",
+		"/registries/{id}/scan",
 	},
 	Route{
 		"ListImages",
@@ -76,6 +76,21 @@ var routes = []Route{
 		"Job",
 		"GET",
 		"/jobs/{id}",
+	},
+	Route{
+		"JobVersions",
+		"GET",
+		"/jobs/{id}/job-versions",
+	},
+	Route{
+		"ListJobVersions",
+		"GET",
+		"/job-versions",
+	},
+	Route{
+		"JobVersion",
+		"GET",
+		"/job-versions/{id}",
 	},
 	Route{
 		"Login",

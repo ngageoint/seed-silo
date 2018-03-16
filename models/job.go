@@ -385,13 +385,13 @@ func UpdateJobVersion(db *sql.DB, jv JobVersion) error {
 	return err
 }
 
-func ReadJobVersions(db *sql.DB, jobId int) []JobVersion {
+func ReadJobVersions(db *sql.DB) []JobVersion {
 	sql_read := `
-	SELECT * FROM JobVersion WHERE job_id=?
+	SELECT * FROM JobVersion
 	ORDER BY id ASC
 	`
 
-	rows, err := db.Query(sql_read, jobId)
+	rows, err := db.Query(sql_read)
 	if err != nil {
 		panic(err)
 	}

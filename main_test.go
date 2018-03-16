@@ -20,6 +20,7 @@ import (
 var token = ""
 
 func TestMain(m *testing.M) {
+	os.Remove("./silo-test.db")
 	db = InitDB("./silo-test.db")
 	router, err = NewRouter()
 
@@ -68,8 +69,8 @@ func TestGetNonExistentItem(t *testing.T) {
 		auth     bool
 		errorMsg string
 	}{
-		{"/registry/1/scan", 401, false, "Missing authorization token"},
-		{"/registry/1/scan", 404, true, "No registry found with that ID"},
+		{"/registries/1/scan", 401, false, "Missing authorization token"},
+		{"/registries/1/scan", 404, true, "No registry found with that ID"},
 		{"/images/1/manifest", 404, false, "No image found with that ID"},
 	}
 
@@ -95,7 +96,7 @@ func TestAddRegistry(t *testing.T) {
 
 	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
 
-	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
+	req, _ := http.NewRequest("POST", "/registries/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
@@ -129,13 +130,13 @@ func TestDeleteRegistry(t *testing.T) {
 	addRegistry()
 
 	payload := []byte(``)
-	req, _ := http.NewRequest("DELETE", "/registry/delete/1", bytes.NewBuffer(payload))
+	req, _ := http.NewRequest("DELETE", "/registries/delete/1", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	req, _ = http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	req, _ = http.NewRequest("GET", "/registries/1/scan", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	response = executeRequest(req)
 
@@ -149,7 +150,7 @@ func TestDeleteRegistry(t *testing.T) {
 		t.Errorf("Expected error to be '%s'. Got '%v'", errorStr, m["error"])
 	}
 
-	req, _ = http.NewRequest("DELETE", "/registry/delete/test", bytes.NewBuffer(payload))
+	req, _ = http.NewRequest("DELETE", "/registries/delete/test", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	response = executeRequest(req)
 
@@ -162,7 +163,7 @@ func TestScanRegistry(t *testing.T) {
 	addRegistry()
 
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	req, _ := http.NewRequest("GET", "/registries/1/scan", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
@@ -176,14 +177,16 @@ func TestScanRegistry(t *testing.T) {
 	m := []models.SimpleImage{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest",
-	Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "", JobVersion: "0.1.0",
-	PackageVersion: "0.1.0", Description: ""}
+	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
+		JobVersion: "0.1.0", PackageVersion: "0.1.0"}
 	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
 
-	req, _ = http.NewRequest("GET", "/registry/test/scan", bytes.NewBuffer(payload))
+	req, _ = http.NewRequest("GET", "/registries/test/scan", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	response = executeRequest(req)
 
@@ -196,13 +199,13 @@ func TestSearchImages(t *testing.T) {
 	addRegistry()
 
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	req, _ := http.NewRequest("GET", "/registries/1/scan", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
 	checkResponseCode(t, 202, response.Code)
 
-	req, _ = http.NewRequest("GET", "/images/search/latest", bytes.NewBuffer(payload))
+	req, _ = http.NewRequest("GET", "/images/search/my-job-0.1.0", bytes.NewBuffer(payload))
 	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -210,9 +213,11 @@ func TestSearchImages(t *testing.T) {
 	m := []models.SimpleImage{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:latest",
-		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "", JobVersion: "0.1.0",
-		PackageVersion: "0.1.0", Description: ""}
+	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
+		JobVersion: "0.1.0", PackageVersion: "0.1.0"}
 	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
 		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
 	}
@@ -234,7 +239,7 @@ func TestImageManifest(t *testing.T) {
 	addRegistry()
 
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registry/1/scan", bytes.NewBuffer(payload))
+	req, _ := http.NewRequest("GET", "/registries/1/scan", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	response := executeRequest(req)
 
@@ -280,7 +285,7 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 func addRegistry() {
 	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
 
-	req, _ := http.NewRequest("POST", "/registry/add", bytes.NewBuffer(payload))
+	req, _ := http.NewRequest("POST", "/registries/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: " + token)
 	executeRequest(req)
 }

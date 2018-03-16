@@ -10,11 +10,11 @@ import (
 
 var handler = map[string]http.HandlerFunc{
 	"Index": Index,
-	"Registry": Registry,
 	"AddRegistry": Validate([]string{"admin"}, AddRegistry),
 	"DeleteRegistry": Validate([]string{"admin"}, DeleteRegistry),
 	"ListRegistries": ListRegistries,
 	"ScanRegistries": Validate([]string{"admin"}, ScanRegistries),
+	"Registry": Registry,
 	"ScanRegistry": Validate([]string{"admin"}, ScanRegistry),
 	"ListImages": ListImages,
 	"SearchImages": SearchImages,
@@ -23,6 +23,9 @@ var handler = map[string]http.HandlerFunc{
 	"ImageManifest": ImageManifest,
 	"ListJobs": ListJobs,
 	"Job": Job,
+	"JobVersions": JobVersions,
+	"ListJobVersions": ListJobVersions,
+	"JobVersion": JobVersion,
 	"Login": Login,
 	"User": User,
 	"AddUser": Validate([]string{"admin"}, AddUser),

@@ -506,6 +506,62 @@ func Job(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, job)
 }
 
+func JobVersions(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	job, err := models.ReadJob(db, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			respondWithError(w, http.StatusNotFound, "No job found with that ID")
+			return
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	job.JobVersions = models.GetJobVersions(db, job.ID)
+
+	respondWithJSON(w, http.StatusOK, job.JobVersions)
+}
+
+func ListJobVersions(w http.ResponseWriter, r *http.Request) {
+	jvList := []models.JobVersion{}
+	jvs := models.ReadJobVersions(db)
+	jvList = append(jvList, jvs...)
+
+	respondWithJSON(w, http.StatusOK, jvList)
+}
+
+func JobVersion(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	jv, err := models.ReadJobVersion(db, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			respondWithError(w, http.StatusNotFound, "No job version found with that ID")
+			return
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	jv.Images = models.GetJobVersionImages(db, jv.ID)
+
+	respondWithJSON(w, http.StatusOK, jv)
+}
+
 func Login(w http.ResponseWriter, r *http.Request) {
 	//get user provided login and validate it
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))

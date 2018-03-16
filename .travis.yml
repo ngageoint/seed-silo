@@ -10,8 +10,8 @@ install:
 
 script:
    - echo "skipping tests"
-#  - ./build-silo.sh
-#  - go test .
+   - .build-silo.sh
+   - go test .
 
 notifications:
   webhooks:
