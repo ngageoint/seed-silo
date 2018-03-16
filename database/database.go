@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"database/sql"
@@ -6,6 +6,8 @@ import (
 	"github.com/ngageoint/seed-silo/models"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+var data *sql.DB
 
 func InitDB(filepath string) *sql.DB {
 	db, err := sql.Open("sqlite3", filepath)
@@ -20,5 +22,11 @@ func InitDB(filepath string) *sql.DB {
 	models.CreateJobTable(db)
 	models.CreateJobVersionTable(db)
 
+	data = db
+
 	return db
+}
+
+func GetDB() *sql.DB {
+	return data
 }

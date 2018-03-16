@@ -271,7 +271,7 @@ func ReadJob(db *sql.DB, id int) (Job, error) {
 	err := row.Scan(&result.ID, &result.Name, &result.LatestJobVersion, &result.LatestPackageVersion,
 		&result.Title, &result.Maintainer, &result.Email, &result.MaintOrg, &result.Description)
 	if err != nil {
-		panic(err)
+		util.PrintUtil("ERROR scanning in read job: %v", err.Error())
 	}
 
 	return result, err
@@ -422,7 +422,7 @@ func ReadJobVersion(db *sql.DB, id int) (JobVersion, error) {
 	var result JobVersion
 	err := row.Scan(&result.ID, &result.JobName, &result.JobId, &result.JobVersion, &result.LatestPackageVersion)
 	if err != nil {
-		return result, err
+		util.PrintUtil("ERROR scanning in read job version: %v", err.Error())
 	}
 
 	return result, err
