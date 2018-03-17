@@ -87,11 +87,17 @@ func TestGetNonExistentItem(t *testing.T) {
 	}{
 		{"/registries/1/scan", 401, false, "Missing authorization token"},
 		{"/registries/1/scan", 404, true, "No registry found with that ID"},
+		{"/registries/1", 404, true, "No registry found with that ID"},
+		{"/registries/badid", 400, true, "Invalid ID"},
 		{"/images/1", 404, false, "No image found with that ID"},
+		{"/images/badid", 400, false, "Invalid ID"},
 		{"/images/1/manifest", 404, false, "No image found with that ID"},
 		{"/users/2", 404, false, "No user found with that ID"},
+		{"/users/badid", 400, false, "Invalid ID"},
 		{"/jobs/1", 404, false, "No job found with that ID"},
+		{"/jobs/badid", 400, false, "Invalid ID"},
 		{"/job-versions/1", 404, false, "No job version found with that ID"},
+		{"/job-versions/badid", 400, false, "Invalid ID"},
 	}
 
 	for _, c := range cases {
