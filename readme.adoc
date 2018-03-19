@@ -35,7 +35,7 @@ Retrieves a registry
 [cols="h,5a"]
 |===
 | URL
-| /registry/{id}
+| /registries/{id}
 
 | Method
 | GET
@@ -68,7 +68,7 @@ the daemon is unable to connect to the registry.
 [cols="h,5a"]
 |===
 | URL
-| /registry/add
+| /registries/add
 
 | Method
 | POST
@@ -104,7 +104,7 @@ Removes a registry from the list of registries along with all images associated 
 [cols="h,5a"]
 |===
 | URL
-| /registry/delete/{id}
+| /registries/delete/{id}
 
 | Method
 | DELETE
@@ -174,7 +174,7 @@ Requires admin authorization token
 [cols="h,5a"]
 |===
 | URL
-| /registry/{id}/scan
+| /registries/{id}/scan
 
 | Method
 | GET
@@ -265,22 +265,36 @@ Retrieves all of the Seed images that have been scanned from registries
 | Success Response
 |       Code: 200 +
         Content: [ +
-                   { +
-                     "ID": 3, +
-                     "RegistryId": 1, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
-                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
-                   }, +
-                   { +
-                     "ID": 4, +
-                     "RegistryId": 2, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
-                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
-                   } +
+{ +
+    "ID": 1, +
+    "RegistryId": 1, +
+    "Name": "my-job-0.1.0-seed:0.1.0", +
+    "Registry": "docker.io", +
+    "Org": "johnptobe", +
+    "JobName": "my-job", +
+    "Title": "My first job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+    "JobVersion": "0.1.0", +
+    "PackageVersion": "0.1.0" +
+  }, +
+  { +
+    "ID": 2, +
+    "RegistryId": 1, +
+    "Name": "extractor-0.1.0-seed:0.1.0", +
+    "Registry": "docker.io", +
+    "Org": "johnptobe", +
+    "JobName": "extractor", +
+    "Title": "Extractor", +
+    "Maintainer": "John Tobe", +
+    "Email": "jtobe@example.com", +
+    "MaintOrg": "", +
+    "Description": "Read's a zip file and extracts the contents", +
+    "JobVersion": "0.1.0", +
+    "PackageVersion": "0.1.0" +
+  }, +
                  ]
 
 |Error Response
@@ -312,30 +326,36 @@ returned if the name, organization or manifest strings match the given query.
 | Success Response
 |       Code: 200 +
         Content: [ +
-                   { +
-                     "ID": 3, +
-                     "RegistryId": 1, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
-                     "JobName": "my-job" +
-                     "Title": "My first job" +
-                     "JobVersion": "0.1.0" +
-                     "PackageVersion": "0.1.0" +
-                     "Description": "Reads an HDF5 file and o…t containing cell_count" +
-                   }, +
-                   { +
-                     "ID": 4, +
-                     "RegistryId": 2, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
-                     "JobName": "my-job2" +
-                     "Title": "My second job" +
-                     "JobVersion": "0.1.0" +
-                     "PackageVersion": "0.1.0" +
-                     "Description": "Reads another HDF5 file and..." +
-                   } +
+{ +
+    "ID": 1, +
+    "RegistryId": 1, +
+    "Name": "my-job-0.1.0-seed:0.1.0", +
+    "Registry": "docker.io", +
+    "Org": "johnptobe", +
+    "JobName": "my-job", +
+    "Title": "My first job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+    "JobVersion": "0.1.0", +
+    "PackageVersion": "0.1.0" +
+  }, +
+  { +
+    "ID": 2, +
+    "RegistryId": 1, +
+    "Name": "extractor-0.1.0-seed:0.1.0", +
+    "Registry": "docker.io", +
+    "Org": "johnptobe", +
+    "JobName": "extractor", +
+    "Title": "Extractor", +
+    "Maintainer": "John Tobe", +
+    "Email": "jtobe@example.com", +
+    "MaintOrg": "", +
+    "Description": "Read's a zip file and extracts the contents", +
+    "JobVersion": "0.1.0", +
+    "PackageVersion": "0.1.0" +
+  }, +
                  ]
 
 |Error Response
@@ -367,11 +387,21 @@ Retrieves an image
 |       Code: 200 +
         Content: +
                    { +
-                     "ID": 3, +
-                     "RegistryId": 1, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
+  "ID": 1, +
+  "RegistryId": 1, +
+  "JobId": 1, +
+  "JobVersionId": 1, +
+  "FullName": "my-job-0.1.0-seed:0.1.0", +
+  "ShortName": "my-job", +
+  "Title": "My first job", +
+  "Maintainer": "John Doe", +
+  "Email": "jdoe@example.com", +
+  "MaintOrg": "E-corp", +
+  "JobVersion": "0.1.0", +
+  "PackageVersion": "0.1.0", +
+  "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+  "Registry": "docker.io", +
+  "Org": "johnptobe", +
                      "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
                       <full seed json> link:seed.manifest.json[sample manifest] +
                    }
@@ -429,7 +459,7 @@ Retrieves a user
 [cols="h,5a"]
 |===
 | URL
-| /registry/{id}
+| /users/{id}
 
 | Method
 | GET
@@ -461,7 +491,7 @@ Adds a user to the system.  Requires a valid token from an admin user.
 [cols="h,5a"]
 |===
 | URL
-| /user/add
+| /users/add
 
 | Method
 | POST
@@ -485,7 +515,7 @@ Adds a user to the system.  Requires a valid token from an admin user.
         Content: { error : "Error unmarshalling json. " }
 
 |Sample Call
-|curl -H "Content-Type: application/json" -d '{"username":"admin", "password": "hunter17", "role": "admin"}' -H "Authorization: Token <token>" http://localhost:9000/user/add
+|curl -H "Content-Type: application/json" -d '{"username":"admin", "password": "hunter17", "role": "admin"}' -H "Authorization: Token <token>" http://localhost:9000/users/add
 |===
 
 ==== Delete User
@@ -495,7 +525,7 @@ Removes a user from the system.  Requires a valid token from an admin user.
 [cols="h,5a"]
 |===
 | URL
-| /user/delete/{id}
+| /users/delete/{id}
 
 | Method
 | DELETE
@@ -519,7 +549,7 @@ Removes a user from the system.  Requires a valid token from an admin user.
         Content: { error : "User does not have permission to perform this action" }
 
 |Sample Call
-| curl -X "DELETE" -H "Authorization: Token <token>" http://localhost:9000/user/delete/1
+| curl -X "DELETE" -H "Authorization: Token <token>" http://localhost:9000/users/delete/1
 |===
 
 ==== List Users
