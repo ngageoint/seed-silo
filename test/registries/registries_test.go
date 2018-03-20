@@ -219,6 +219,24 @@ func TestScanRegistry(t *testing.T) {
 	checkResponseCode(t, http.StatusBadRequest, response.Code)
 }
 
+func TestListRegistries(t *testing.T) {
+	clearTable()
+
+	addRegistry()
+
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/registries/scan", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: "+token)
+	response := executeRequest(req)
+
+	checkResponseCode(t, 202, response.Code)
+
+	req, _ = http.NewRequest("GET", "/registries", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+}
+
 func clearTable() {
 	db.Exec("DELETE FROM RegistryInfo")
 	db.Exec("DELETE FROM Image")
