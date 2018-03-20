@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-silo/database"
 	"github.com/ngageoint/seed-silo/models"
+	"github.com/ngageoint/seed-common/util"
 )
 
 func ListJobs(w http.ResponseWriter, r *http.Request) {
@@ -167,6 +168,12 @@ func SearchJobs(w http.ResponseWriter, r *http.Request) {
 	jobMap := make(map[int]models.Job)
 	for _, res := range rankedResults {
 		job, _ := models.ReadJob(db, res.Image.JobId)
+		jv, err := models.ReadJobVersion(db, res.Image.JobVersionId)
+		if err != nil {
+			job.JobVersions = append(job.JobVersions, jv)
+		} else {
+			util.PrintUtil("ERROR: Error getting job version %d, %v\n", res.Image.JobVersionId, err.Error())
+		}
 		job1, ok := jobMap[res.Image.JobId]
 		if !ok {
 			results = append(results, job)
@@ -174,6 +181,7 @@ func SearchJobs(w http.ResponseWriter, r *http.Request) {
 			jobMap[res.Image.JobId] = job
 		} else {
 			job1.ImageIDs = append(job1.ImageIDs, res.Image.ID)
+			job1.JobVersions = append(job1.JobVersions, job.JobVersions...)
 		}
 	}
 
