@@ -88,19 +88,9 @@ func TestSearchImages(t *testing.T) {
 }
 
 func TestImageManifest(t *testing.T) {
-	clearTable()
-
-	addRegistry()
-
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registries/1/scan", bytes.NewBuffer(payload))
-	req.Header.Set("Authorization", "Token: "+token)
+	req, _ := http.NewRequest("GET", "/images/1/manifest", bytes.NewBuffer(payload))
 	response := executeRequest(req)
-
-	checkResponseCode(t, 202, response.Code)
-
-	req, _ = http.NewRequest("GET", "/images/1/manifest", bytes.NewBuffer(payload))
-	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
@@ -117,37 +107,9 @@ func TestImageManifest(t *testing.T) {
 }
 
 func TestListImages(t *testing.T) {
-	clearTable()
-
-	addRegistry()
-
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registries/scan", bytes.NewBuffer(payload))
-	req.Header.Set("Authorization", "Token: "+token)
+	req, _ := http.NewRequest("GET", "/images", bytes.NewBuffer(payload))
 	response := executeRequest(req)
-
-	checkResponseCode(t, 202, response.Code)
-
-	req, _ = http.NewRequest("GET", "/images", bytes.NewBuffer(payload))
-	response = executeRequest(req)
-
-	checkResponseCode(t, http.StatusOK, response.Code)
-}
-
-func TestListRegistries(t *testing.T) {
-	clearTable()
-
-	addRegistry()
-
-	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registries/scan", bytes.NewBuffer(payload))
-	req.Header.Set("Authorization", "Token: "+token)
-	response := executeRequest(req)
-
-	checkResponseCode(t, 202, response.Code)
-
-	req, _ = http.NewRequest("GET", "/registries", bytes.NewBuffer(payload))
-	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
