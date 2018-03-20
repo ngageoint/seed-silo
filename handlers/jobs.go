@@ -181,6 +181,7 @@ func SearchJobs(w http.ResponseWriter, r *http.Request) {
 		} else {
 			job1.ImageIDs = append(job1.ImageIDs, res.Image.ID)
 			job1.JobVersions = append(job1.JobVersions, job.JobVersions...)
+			jobMap[res.Image.JobId] = job1
 		}
 	}
 
