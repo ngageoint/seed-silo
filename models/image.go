@@ -421,7 +421,7 @@ func GetJobVersionImageIds(db *sql.DB, jobversionid int) []int {
 	return result
 }
 
-func GetJobVersionImages(db *sql.DB, jobversionid int) []SimpleImage {
+func GetJobVersionImages(db *sql.DB, jobversionid int) []Image {
 	sql_readall := `SELECT * FROM Image WHERE job_version_id=?`
 
 	rows, err := db.Query(sql_readall, jobversionid)
@@ -430,17 +430,22 @@ func GetJobVersionImages(db *sql.DB, jobversionid int) []SimpleImage {
 	}
 	defer rows.Close()
 
-	var result []SimpleImage
+	var result []Image
 	for rows.Next() {
-		item := SimpleImage{}
-		img := Image{}
-		var manifest string
-		err2 := rows.Scan(&item.ID, &item.RegistryId, &img.JobId, &img.JobVersionId, &item.Name,
-			&item.JobName, &item.Title, &item.Maintainer, &item.Email, &item.MaintOrg,
-			&item.JobVersion, &item.PackageVersion, &item.Description, &item.Registry, &item.Org, &manifest)
+		item := Image{}
+		err2 := rows.Scan(&item.ID, &item.RegistryId, &item.JobId, &item.JobVersionId, &item.FullName,
+			&item.ShortName, &item.Title, &item.Maintainer, &item.Email, &item.MaintOrg,
+			&item.JobVersion, &item.PackageVersion, &item.Description, &item.Registry, &item.Org, &item.Manifest)
 		if err2 != nil {
 			panic(err2)
 		}
+
+		err = json.Unmarshal([]byte(item.Manifest), &item.Seed)
+		if err != nil {
+			log.Printf("Error unmarshalling seed manifest for %s: %s \n", item.FullName, err.Error())
+			err = nil
+		}
+
 		result = append(result, item)
 	}
 

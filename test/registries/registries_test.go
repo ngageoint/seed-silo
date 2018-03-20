@@ -1,4 +1,4 @@
-package registries
+package handlers_registries_test
 
 import (
 	"bytes"

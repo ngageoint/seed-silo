@@ -1,4 +1,4 @@
-package users
+package handlers_users_test
 
 import (
 	"bytes"

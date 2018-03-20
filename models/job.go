@@ -283,7 +283,7 @@ type JobVersion struct {
 	JobId                int    `db:"job_id"`
 	JobVersion           string `db:"job_version"`
 	LatestPackageVersion string `db:"latest_package_version"`
-	Images               []SimpleImage
+	Images               []Image
 }
 
 func SetJobVersionInfo(jv *JobVersion, img Image) {
