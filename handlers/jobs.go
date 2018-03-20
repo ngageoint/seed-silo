@@ -102,8 +102,6 @@ func JobVersion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	jv.Images = models.GetJobVersionImages(db, jv.ID)
-
 	respondWithJSON(w, http.StatusOK, jv)
 }
 
@@ -169,7 +167,8 @@ func SearchJobs(w http.ResponseWriter, r *http.Request) {
 	for _, res := range rankedResults {
 		job, _ := models.ReadJob(db, res.Image.JobId)
 		jv, err := models.ReadJobVersion(db, res.Image.JobVersionId)
-		if err != nil {
+		job.JobVersions = []models.JobVersion{}
+		if err == nil {
 			job.JobVersions = append(job.JobVersions, jv)
 		} else {
 			util.PrintUtil("ERROR: Error getting job version %d, %v\n", res.Image.JobVersionId, err.Error())

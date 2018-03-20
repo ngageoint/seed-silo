@@ -425,6 +425,8 @@ func ReadJobVersion(db *sql.DB, id int) (JobVersion, error) {
 		util.PrintUtil("ERROR scanning in read job version: %v", err.Error())
 	}
 
+	result.Images = GetJobVersionImages(db, result.ID)
+
 	return result, err
 }
 
