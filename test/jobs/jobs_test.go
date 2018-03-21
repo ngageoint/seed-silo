@@ -1,24 +1,23 @@
 package handlers_jobs_test
 
 import (
-"bytes"
-"database/sql"
-"encoding/json"
-"errors"
-"fmt"
-"io/ioutil"
-"log"
-"net/http"
-"net/http/httptest"
-"os"
-"testing"
+	"bytes"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
 
-"github.com/gorilla/mux"
-"github.com/ngageoint/seed-common/objects"
-"github.com/ngageoint/seed-common/util"
-"github.com/ngageoint/seed-silo/models"
-"github.com/ngageoint/seed-silo/database"
-"github.com/ngageoint/seed-silo/route"
+	"github.com/gorilla/mux"
+	"github.com/ngageoint/seed-common/util"
+	"github.com/ngageoint/seed-silo/database"
+	"github.com/ngageoint/seed-silo/models"
+	"github.com/ngageoint/seed-silo/route"
 )
 
 var token = ""
@@ -64,35 +63,30 @@ func TestSearchJobs(t *testing.T) {
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	m := []models.SimpleImage{}
+	m := make(map[int]models.Job)
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
-		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
-		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
-		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
-		JobVersion:  "0.1.0", PackageVersion: "0.1.0"}
+	searchResult := m[1]
+	searchResult.JobVersions = nil
 
-		testJobVersion := models.JobVersion{ID: 1, JobId: 1, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
-		testJobVersion.Images = append(testJobVersion.Images, testImage)
-
-		testJob := models.Job{ID: 1, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
+	testJob := models.Job{ID: 1, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
 		Title: "My first job", Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
-		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: []int{1} }
-		testJob.JobVersions = append(testJob.JobVersions, testJobVersion)
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: []int{1}}
 
-	if fmt.Sprint(m[0]) != fmt.Sprint(testJob) {
-		t.Errorf("Expected image to be %v. Got '%v'", testJob, m[0])
+	if fmt.Sprint(searchResult) != fmt.Sprint(testJob) {
+		t.Errorf("Expected image to be %v. Got '%v'", testJob, searchResult)
 	}
 
 	req, _ = http.NewRequest("GET", "/jobs/search/asdfasdf", bytes.NewBuffer(payload))
 	response = executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
-	json.Unmarshal(response.Body.Bytes(), &m)
 
-	if len(m) != 0 {
-		t.Errorf("Expected emtpy job list. Got %d results.", len(m))
+	m2 := make(map[int]models.Job)
+	json.Unmarshal(response.Body.Bytes(), &m2)
+
+	if len(m2) != 0 {
+		t.Errorf("Expected emtpy job list. Got %d results.", len(m2))
 	}
 }
 
@@ -104,6 +98,57 @@ func TestJob(t *testing.T) {
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
+	m := models.Job{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	m.JobVersions = nil
+
+	testJob := models.Job{ID: 1, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
+		Title: "My first job", Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: []int{1, 3, 5}}
+
+	mStr := fmt.Sprintf("%v", m)
+	testStr := fmt.Sprintf("%v", testJob)
+	if mStr != testStr {
+		t.Errorf("Expected manifest to be %v. Got '%v'", testJob, m)
+	}
+}
+
+func TestListJobs(t *testing.T) {
+	payload := []byte(``)
+
+	req, _ := http.NewRequest("GET", "/jobs", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	m := []models.Job{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	m[0].JobVersions = nil
+
+	testJob := models.Job{ID: 1, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
+		Title: "My first job", Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: []int{1, 3, 5}}
+
+	mStr := fmt.Sprintf("%v", m[0])
+	testStr := fmt.Sprintf("%v", testJob)
+	if mStr != testStr {
+		t.Errorf("Expected manifest to be %v. Got '%v'", testJob, m[0])
+	}
+}
+
+func TestJobVersion(t *testing.T) {
+	payload := []byte(``)
+
+	req, _ := http.NewRequest("GET", "/job-versions/1", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	m := models.JobVersion{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
 	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
 		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
 		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
@@ -113,52 +158,65 @@ func TestJob(t *testing.T) {
 	testJobVersion := models.JobVersion{ID: 1, JobId: 1, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
 	testJobVersion.Images = append(testJobVersion.Images, testImage)
 
-	testJob := models.Job{ID: 1, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
-		Title: "My first job", Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
-		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: []int{1} }
-	testJob.JobVersions = append(testJob.JobVersions, testJobVersion)
-
 	mStr := fmt.Sprintf("%v", m)
-	testStr := fmt.Sprintf("%v", testJob)
+	testStr := fmt.Sprintf("%v", testJobVersion)
 	if mStr != testStr {
-		t.Errorf("Expected manifest to be %v. Got '%v'", testJob, m)
+		t.Errorf("Expected manifest to be %v. Got '%v'", testJobVersion, m)
 	}
 }
 
-func TestListImages(t *testing.T) {
-	clearTable()
-
-	addRegistry()
-
+func TestJobVersions(t *testing.T) {
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registries/scan", bytes.NewBuffer(payload))
-	req.Header.Set("Authorization", "Token: "+token)
+
+	req, _ := http.NewRequest("GET", "/jobs/1/job-versions", bytes.NewBuffer(payload))
 	response := executeRequest(req)
 
-	checkResponseCode(t, 202, response.Code)
-
-	req, _ = http.NewRequest("GET", "/images", bytes.NewBuffer(payload))
-	response = executeRequest(req)
-
 	checkResponseCode(t, http.StatusOK, response.Code)
+
+	m := []models.JobVersion{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
+		JobVersion:  "0.1.0", PackageVersion: "0.1.0"}
+
+	testJobVersion := models.JobVersion{ID: 1, JobId: 1, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
+	testJobVersion.Images = append(testJobVersion.Images, testImage)
+
+	mStr := fmt.Sprintf("%v", m[0])
+	testStr := fmt.Sprintf("%v", testJobVersion)
+	if mStr != testStr {
+		t.Errorf("Expected manifest to be %v. Got '%v'", testJobVersion, m[0])
+	}
 }
 
-func TestListRegistries(t *testing.T) {
-	clearTable()
-
-	addRegistry()
-
+func TestListJobVersions(t *testing.T) {
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registries/scan", bytes.NewBuffer(payload))
-	req.Header.Set("Authorization", "Token: "+token)
+
+	req, _ := http.NewRequest("GET", "/job-versions", bytes.NewBuffer(payload))
 	response := executeRequest(req)
 
-	checkResponseCode(t, 202, response.Code)
-
-	req, _ = http.NewRequest("GET", "/registries", bytes.NewBuffer(payload))
-	response = executeRequest(req)
-
 	checkResponseCode(t, http.StatusOK, response.Code)
+
+	m := []models.JobVersion{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
+		JobVersion:  "0.1.0", PackageVersion: "0.1.0"}
+
+	testJobVersion := models.JobVersion{ID: 1, JobId: 1, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
+	testJobVersion.Images = append(testJobVersion.Images, testImage)
+
+	mStr := fmt.Sprintf("%v", m[0])
+	testStr := fmt.Sprintf("%v", testJobVersion)
+	if mStr != testStr {
+		t.Errorf("Expected manifest to be %v. Got '%v'", testJobVersion, m[0])
+	}
 }
 
 func get_images() bool {
