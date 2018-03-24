@@ -48,7 +48,7 @@ Retrieves a registry
 
 | Success Response
 |       Code: 200 +
-        Content: {"ID":1,"Name":"dockerhub","Url":"https://hub.docker.com","Org":"johnptobe","Username":"","Password":""}
+        Content: {"ID":1,"Name":"dockerhub","Url":"https://hub.docker.com","Org":"geointseed","Username":"","Password":""}
 
 |Error Response
 |       Code: 400 Bad Request +
@@ -270,7 +270,7 @@ Retrieves all of the Seed images that have been scanned from registries
     "RegistryId": 1, +
     "Name": "my-job-0.1.0-seed:0.1.0", +
     "Registry": "docker.io", +
-    "Org": "johnptobe", +
+    "Org": "geointseed", +
     "JobName": "my-job", +
     "Title": "My first job", +
     "Maintainer": "John Doe", +
@@ -285,7 +285,7 @@ Retrieves all of the Seed images that have been scanned from registries
     "RegistryId": 1, +
     "Name": "extractor-0.1.0-seed:0.1.0", +
     "Registry": "docker.io", +
-    "Org": "johnptobe", +
+    "Org": "geointseed", +
     "JobName": "extractor", +
     "Title": "Extractor", +
     "Maintainer": "John Tobe", +
@@ -331,7 +331,7 @@ returned if the name, organization or manifest strings match the given query.
     "RegistryId": 1, +
     "Name": "my-job-0.1.0-seed:0.1.0", +
     "Registry": "docker.io", +
-    "Org": "johnptobe", +
+    "Org": "geointseed", +
     "JobName": "my-job", +
     "Title": "My first job", +
     "Maintainer": "John Doe", +
@@ -346,7 +346,7 @@ returned if the name, organization or manifest strings match the given query.
     "RegistryId": 1, +
     "Name": "extractor-0.1.0-seed:0.1.0", +
     "Registry": "docker.io", +
-    "Org": "johnptobe", +
+    "Org": "geointseed", +
     "JobName": "extractor", +
     "Title": "Extractor", +
     "Maintainer": "John Tobe", +
@@ -401,7 +401,7 @@ Retrieves an image
   "PackageVersion": "0.1.0", +
   "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
   "Registry": "docker.io", +
-  "Org": "johnptobe", +
+  "Org": "geointseed", +
                      "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
                       <full seed json> link:seed.manifest.json[sample manifest] +
                    }

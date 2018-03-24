@@ -24,6 +24,7 @@ import (
 var token = ""
 var db *sql.DB
 var router *mux.Router
+var imageID int
 
 func TestMain(m *testing.M) {
 	var err error
@@ -50,6 +51,8 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 
+	imageID = findTestImageID()
+
 	code := m.Run()
 
 	os.Remove("./silo-test.db")
@@ -67,8 +70,8 @@ func TestSearchImages(t *testing.T) {
 	m := []models.SimpleImage{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
-		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+	testImage := models.SimpleImage{ID: imageID, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "geointseed", JobName: "my-job", Title: "My first job",
 		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
 		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
 		JobVersion:  "0.1.0", PackageVersion: "0.1.0"}
@@ -89,7 +92,8 @@ func TestSearchImages(t *testing.T) {
 
 func TestImageManifest(t *testing.T) {
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/images/1/manifest", bytes.NewBuffer(payload))
+	url := fmt.Sprintf("/images/%d/manifest", imageID)
+	req, _ := http.NewRequest("GET", url, bytes.NewBuffer(payload))
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -149,7 +153,7 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 }
 
 func addRegistry() {
-	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"geointseed", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registries/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: "+token)
@@ -170,4 +174,30 @@ func login(username, password string) (string, error) {
 	json.Unmarshal(response.Body.Bytes(), &m)
 
 	return m["token"], nil
+}
+
+func findTestImageID() int {
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/images", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	if response.Code != 200 {
+		return -1
+	}
+
+	images := []models.SimpleImage{}
+	err :=json.Unmarshal(response.Body.Bytes(), &images)
+
+	if err != nil {
+		return -1
+	}
+
+	var m models.SimpleImage
+	for _, img := range images {
+		if img.Name == "my-job-0.1.0-seed:0.1.0"{
+			m = img
+		}
+	}
+
+	return m.ID
 }

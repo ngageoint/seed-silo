@@ -120,7 +120,7 @@ func TestGetNonExistentItem(t *testing.T) {
 func TestAddRegistry(t *testing.T) {
 	clearTable()
 
-	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"geointseed", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registries/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: "+token)
@@ -145,8 +145,8 @@ func TestAddRegistry(t *testing.T) {
 		t.Errorf("Expected url to be 'https://hub.docker.com'. Got '%v'", m["Url"])
 	}
 
-	if m["Org"] != "johnptobe" {
-		t.Errorf("Expected org to be 'johnptobe'. Got '%v'", m["Org"])
+	if m["Org"] != "geointseed" {
+		t.Errorf("Expected org to be 'geointseed'. Got '%v'", m["Org"])
 	}
 }
 
@@ -200,16 +200,18 @@ func TestScanRegistry(t *testing.T) {
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	m := []models.SimpleImage{}
-	json.Unmarshal(response.Body.Bytes(), &m)
+	images := []models.SimpleImage{}
+	json.Unmarshal(response.Body.Bytes(), &images)
 
-	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
-		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+	imID := findTestImageID()
+
+	testImage := models.SimpleImage{ID: imID, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "geointseed", JobName: "my-job", Title: "My first job",
 		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
 		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
 		JobVersion:  "0.1.0", PackageVersion: "0.1.0"}
-	if fmt.Sprint(m[0]) != fmt.Sprint(testImage) {
-		t.Errorf("Expected image to be %v. Got '%v'", testImage, m[0])
+	if fmt.Sprint(images[imID-1]) != fmt.Sprint(testImage) {
+		t.Errorf("Expected image to be %v. Got '%v'", testImage, images[imID-1])
 	}
 
 	req, _ = http.NewRequest("GET", "/registries/test/scan", bytes.NewBuffer(payload))
@@ -259,7 +261,7 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 }
 
 func addRegistry() {
-	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"geointseed", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registries/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: "+token)
@@ -280,4 +282,30 @@ func login(username, password string) (string, error) {
 	json.Unmarshal(response.Body.Bytes(), &m)
 
 	return m["token"], nil
+}
+
+func findTestImageID() int {
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/images", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	if response.Code != 200 {
+		return -1
+	}
+
+	images := []models.SimpleImage{}
+	err :=json.Unmarshal(response.Body.Bytes(), &images)
+
+	if err != nil {
+		return -1
+	}
+
+	var m models.SimpleImage
+	for _, img := range images {
+		if img.Name == "my-job-0.1.0-seed:0.1.0"{
+			m = img
+		}
+	}
+
+	return m.ID
 }

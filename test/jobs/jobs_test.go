@@ -23,6 +23,10 @@ import (
 var token = ""
 var db *sql.DB
 var router *mux.Router
+var JobID int
+var JVID int
+var imageID int
+var imageIDs []int
 
 func TestMain(m *testing.M) {
 	var err error
@@ -49,6 +53,10 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 
+	JobID = findTestJobID()
+	JVID = findTestJobVersionID()
+	imageID = findTestImageID()
+
 	code := m.Run()
 
 	os.Remove("./silo-test.db")
@@ -66,12 +74,13 @@ func TestSearchJobs(t *testing.T) {
 	m := make(map[int]models.Job)
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	searchResult := m[1]
+	searchResult := m[JobID]
 	searchResult.JobVersions = nil
+	searchResult.ImageIDs = nil
 
-	testJob := models.Job{ID: 1, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
+	testJob := models.Job{ID: JobID, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
 		Title: "My first job", Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
-		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: []int{1}}
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: nil}
 
 	if fmt.Sprint(searchResult) != fmt.Sprint(testJob) {
 		t.Errorf("Expected image to be %v. Got '%v'", testJob, searchResult)
@@ -93,7 +102,8 @@ func TestSearchJobs(t *testing.T) {
 func TestJob(t *testing.T) {
 	payload := []byte(``)
 
-	req, _ := http.NewRequest("GET", "/jobs/1", bytes.NewBuffer(payload))
+	url := fmt.Sprintf("/jobs/%d", JobID)
+	req, _ := http.NewRequest("GET", url, bytes.NewBuffer(payload))
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -103,14 +113,14 @@ func TestJob(t *testing.T) {
 
 	m.JobVersions = nil
 
-	testJob := models.Job{ID: 1, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
+	testJob := models.Job{ID: JobID, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
 		Title: "My first job", Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
-		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: []int{1, 3, 5}}
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: imageIDs}
 
 	mStr := fmt.Sprintf("%v", m)
 	testStr := fmt.Sprintf("%v", testJob)
 	if mStr != testStr {
-		t.Errorf("Expected manifest to be %v. Got '%v'", testJob, m)
+		t.Errorf("Expected job to be %v. Got '%v'", testJob, m)
 	}
 }
 
@@ -125,23 +135,24 @@ func TestListJobs(t *testing.T) {
 	m := []models.Job{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	m[0].JobVersions = nil
+	m[JobID-1].JobVersions = nil
 
-	testJob := models.Job{ID: 1, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
+	testJob := models.Job{ID: JobID, Name: "my-job", LatestJobVersion: "1.0.0", LatestPackageVersion: "0.1.0",
 		Title: "My first job", Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
-		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: []int{1, 3, 5}}
+		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", ImageIDs: imageIDs}
 
-	mStr := fmt.Sprintf("%v", m[0])
+	mStr := fmt.Sprintf("%v", m[JobID-1])
 	testStr := fmt.Sprintf("%v", testJob)
 	if mStr != testStr {
-		t.Errorf("Expected manifest to be %v. Got '%v'", testJob, m[0])
+		t.Errorf("Expected job #%d to be %v. Got '%v'", JobID, testJob, m[JobID-1])
 	}
 }
 
 func TestJobVersion(t *testing.T) {
 	payload := []byte(``)
 
-	req, _ := http.NewRequest("GET", "/job-versions/1", bytes.NewBuffer(payload))
+	url := fmt.Sprintf("/job-versions/%d", JVID)
+	req, _ := http.NewRequest("GET", url, bytes.NewBuffer(payload))
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -149,26 +160,27 @@ func TestJobVersion(t *testing.T) {
 	m := models.JobVersion{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
-		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+	testImage := models.SimpleImage{ID: imageID, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "geointseed", JobName: "my-job", Title: "My first job",
 		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
 		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
 		JobVersion:  "0.1.0", PackageVersion: "0.1.0"}
 
-	testJobVersion := models.JobVersion{ID: 1, JobId: 1, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
+	testJobVersion := models.JobVersion{ID: JVID, JobId: JobID, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
 	testJobVersion.Images = append(testJobVersion.Images, testImage)
 
 	mStr := fmt.Sprintf("%v", m)
 	testStr := fmt.Sprintf("%v", testJobVersion)
 	if mStr != testStr {
-		t.Errorf("Expected manifest to be %v. Got '%v'", testJobVersion, m)
+		t.Errorf("Expected job version to be %v. Got '%v'", testJobVersion, m)
 	}
 }
 
 func TestJobVersions(t *testing.T) {
 	payload := []byte(``)
 
-	req, _ := http.NewRequest("GET", "/jobs/1/job-versions", bytes.NewBuffer(payload))
+	url := fmt.Sprintf("/jobs/%d/job-versions", JobID)
+	req, _ := http.NewRequest("GET", url, bytes.NewBuffer(payload))
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -176,19 +188,19 @@ func TestJobVersions(t *testing.T) {
 	m := []models.JobVersion{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
-		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+	testImage := models.SimpleImage{ID: imageID, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "geointseed", JobName: "my-job", Title: "My first job",
 		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
 		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
 		JobVersion:  "0.1.0", PackageVersion: "0.1.0"}
 
-	testJobVersion := models.JobVersion{ID: 1, JobId: 1, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
+	testJobVersion := models.JobVersion{ID: JVID, JobId: JobID, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
 	testJobVersion.Images = append(testJobVersion.Images, testImage)
 
 	mStr := fmt.Sprintf("%v", m[0])
 	testStr := fmt.Sprintf("%v", testJobVersion)
 	if mStr != testStr {
-		t.Errorf("Expected manifest to be %v. Got '%v'", testJobVersion, m[0])
+		t.Errorf("Expected job version #%d to be %v. Got '%v'", JVID, testJobVersion, m[0])
 	}
 }
 
@@ -200,22 +212,24 @@ func TestListJobVersions(t *testing.T) {
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	m := []models.JobVersion{}
-	json.Unmarshal(response.Body.Bytes(), &m)
+	jvs := []models.JobVersion{}
+	json.Unmarshal(response.Body.Bytes(), &jvs)
 
-	testImage := models.SimpleImage{ID: 1, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
-		Registry: "docker.io", Org: "johnptobe", JobName: "my-job", Title: "My first job",
+	m := jvs[JVID-1]
+
+	testImage := models.SimpleImage{ID: imageID, RegistryId: 1, Name: "my-job-0.1.0-seed:0.1.0",
+		Registry: "docker.io", Org: "geointseed", JobName: "my-job", Title: "My first job",
 		Maintainer: "John Doe", Email: "jdoe@example.com", MaintOrg: "E-corp",
 		Description: "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
 		JobVersion:  "0.1.0", PackageVersion: "0.1.0"}
 
-	testJobVersion := models.JobVersion{ID: 1, JobId: 1, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
+	testJobVersion := models.JobVersion{ID: JVID, JobId: JobID, JobName: "my-job", JobVersion: "0.1.0", LatestPackageVersion: "0.1.0"}
 	testJobVersion.Images = append(testJobVersion.Images, testImage)
 
-	mStr := fmt.Sprintf("%v", m[0])
+	mStr := fmt.Sprintf("%v", m)
 	testStr := fmt.Sprintf("%v", testJobVersion)
 	if mStr != testStr {
-		t.Errorf("Expected manifest to be %v. Got '%v'", testJobVersion, m[0])
+		t.Errorf("Expected job version #%d to be %v. Got '%v'", JVID, testJobVersion, m)
 	}
 }
 
@@ -254,7 +268,7 @@ func checkResponseCode(t *testing.T, expected, actual int) {
 }
 
 func addRegistry() {
-	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"johnptobe", "username":"", "password": ""}`)
+	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"geointseed", "username":"", "password": ""}`)
 
 	req, _ := http.NewRequest("POST", "/registries/add", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: "+token)
@@ -275,4 +289,85 @@ func login(username, password string) (string, error) {
 	json.Unmarshal(response.Body.Bytes(), &m)
 
 	return m["token"], nil
+}
+
+func findTestJobID() int {
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/jobs", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	if response.Code != 200 {
+		util.PrintUtil("JOBID ERROR: %d\n\n", response.Code)
+		util.PrintUtil("response: %v\n\n", response.Body)
+		return -1
+	}
+
+	jobs := []models.Job{}
+	err :=json.Unmarshal(response.Body.Bytes(), &jobs)
+
+	if err != nil {
+		return -1
+	}
+
+	var m models.Job
+	for _, job := range jobs {
+		if job.Name == "my-job"{
+			m = job
+			imageIDs = job.ImageIDs
+		}
+	}
+
+	return m.ID
+}
+
+func findTestJobVersionID() int {
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/job-versions", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	if response.Code != 200 {
+		return -1
+	}
+
+	jvs := []models.JobVersion{}
+	err :=json.Unmarshal(response.Body.Bytes(), &jvs)
+
+	if err != nil {
+		return -1
+	}
+
+	var m models.JobVersion
+	for i, jv := range jvs {
+		if jv.JobVersion == "0.1.0" && jv.JobName == "my-job"{
+			m = jv
+		}
+	}
+
+	return m.ID
+}
+
+func findTestImageID() int {
+	payload := []byte(``)
+	req, _ := http.NewRequest("GET", "/images", bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	if response.Code != 200 {
+		return -1
+	}
+
+	images := []models.SimpleImage{}
+	err :=json.Unmarshal(response.Body.Bytes(), &images)
+
+	if err != nil {
+		return -1
+	}
+
+	var m models.SimpleImage
+	for _, img := range images {
+		if img.Name == "my-job-0.1.0-seed:0.1.0"{
+			m = img
+		}
+	}
+
+	return m.ID
 }
