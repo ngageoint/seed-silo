@@ -337,7 +337,7 @@ func findTestJobVersionID() int {
 	}
 
 	var m models.JobVersion
-	for i, jv := range jvs {
+	for _, jv := range jvs {
 		if jv.JobVersion == "0.1.0" && jv.JobName == "my-job"{
 			m = jv
 		}
