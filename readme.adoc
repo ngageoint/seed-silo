@@ -35,7 +35,7 @@ Retrieves a registry
 [cols="h,5a"]
 |===
 | URL
-| /registry/{id}
+| /registries/{id}
 
 | Method
 | GET
@@ -48,7 +48,7 @@ Retrieves a registry
 
 | Success Response
 |       Code: 200 +
-        Content: {"ID":1,"Name":"dockerhub","Url":"https://hub.docker.com","Org":"johnptobe","Username":"","Password":""}
+        Content: {"ID":1,"Name":"dockerhub","Url":"https://hub.docker.com","Org":"geointseed","Username":"","Password":""}
 
 |Error Response
 |       Code: 400 Bad Request +
@@ -57,7 +57,7 @@ Retrieves a registry
         Content: { error : "No registry found with that ID" }
 
 |Sample Call
-| curl -X "GET" http://localhost:9000/registry/1
+| curl -X "GET" http://localhost:9000/registries/1
 |===
 
 ==== Add Registry
@@ -68,7 +68,7 @@ the daemon is unable to connect to the registry.
 [cols="h,5a"]
 |===
 | URL
-| /registry/add
+| /registries/add
 
 | Method
 | POST
@@ -94,7 +94,7 @@ the daemon is unable to connect to the registry.
         Content: { error : "Error unmarshalling json. " }
 
 |Sample Call
-| curl -H "Authorization: Token <token>" -H "Content-Type: application/json" -d '{"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}' http://localhost:9000/registry/add
+| curl -H "Authorization: Token <token>" -H "Content-Type: application/json" -d '{"name":"localhost", "url":"https://localhost:5000", "org":"", "username":"testuser", "password": "testpassword"}' http://localhost:9000/registries/add
 |===
 
 ==== Delete Registry
@@ -104,7 +104,7 @@ Removes a registry from the list of registries along with all images associated 
 [cols="h,5a"]
 |===
 | URL
-| /registry/delete/{id}
+| /registries/delete/{id}
 
 | Method
 | DELETE
@@ -128,7 +128,7 @@ Removes a registry from the list of registries along with all images associated 
         Content: { error : "User does not have permission to perform this action" }
 
 |Sample Call
-| curl -H "Authorization: Token <token>" -X "DELETE" http://localhost:9000/registry/delete/1
+| curl -H "Authorization: Token <token>" -X "DELETE" http://localhost:9000/registries/delete/1
 |===
 
 ==== Scan Registries
@@ -174,7 +174,7 @@ Requires admin authorization token
 [cols="h,5a"]
 |===
 | URL
-| /registry/{id}/scan
+| /registries/{id}/scan
 
 | Method
 | GET
@@ -198,7 +198,7 @@ Requires admin authorization token
         Content: { error : "User does not have permission to perform this action" }
 
 |Sample Call
-| curl -H "Authorization: Token <token>" "https://localhost:9000/registry/1/scan"
+| curl -H "Authorization: Token <token>" "https://localhost:9000/registries/1/scan"
 |===
 
 ==== List Registries
@@ -265,22 +265,36 @@ Retrieves all of the Seed images that have been scanned from registries
 | Success Response
 |       Code: 200 +
         Content: [ +
-                   { +
-                     "ID": 3, +
-                     "RegistryId": 1, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
-                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
-                   }, +
-                   { +
-                     "ID": 4, +
-                     "RegistryId": 2, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
-                     "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
-                   } +
+{ +
+    "ID": 1, +
+    "RegistryId": 1, +
+    "Name": "my-job-0.1.0-seed:0.1.0", +
+    "Registry": "docker.io", +
+    "Org": "geointseed", +
+    "JobName": "my-job", +
+    "Title": "My first job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+    "JobVersion": "0.1.0", +
+    "PackageVersion": "0.1.0" +
+  }, +
+  { +
+    "ID": 2, +
+    "RegistryId": 1, +
+    "Name": "extractor-0.1.0-seed:0.1.0", +
+    "Registry": "docker.io", +
+    "Org": "geointseed", +
+    "JobName": "extractor", +
+    "Title": "Extractor", +
+    "Maintainer": "John Tobe", +
+    "Email": "jtobe@example.com", +
+    "MaintOrg": "", +
+    "Description": "Read's a zip file and extracts the contents", +
+    "JobVersion": "0.1.0", +
+    "PackageVersion": "0.1.0" +
+  }, +
                  ]
 
 |Error Response
@@ -312,30 +326,36 @@ returned if the name, organization or manifest strings match the given query.
 | Success Response
 |       Code: 200 +
         Content: [ +
-                   { +
-                     "ID": 3, +
-                     "RegistryId": 1, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
-                     "JobName": "my-job" +
-                     "Title": "My first job" +
-                     "JobVersion": "0.1.0" +
-                     "PackageVersion": "0.1.0" +
-                     "Description": "Reads an HDF5 file and o…t containing cell_count" +
-                   }, +
-                   { +
-                     "ID": 4, +
-                     "RegistryId": 2, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
-                     "JobName": "my-job2" +
-                     "Title": "My second job" +
-                     "JobVersion": "0.1.0" +
-                     "PackageVersion": "0.1.0" +
-                     "Description": "Reads another HDF5 file and..." +
-                   } +
+{ +
+    "ID": 1, +
+    "RegistryId": 1, +
+    "Name": "my-job-0.1.0-seed:0.1.0", +
+    "Registry": "docker.io", +
+    "Org": "geointseed", +
+    "JobName": "my-job", +
+    "Title": "My first job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+    "JobVersion": "0.1.0", +
+    "PackageVersion": "0.1.0" +
+  }, +
+  { +
+    "ID": 2, +
+    "RegistryId": 1, +
+    "Name": "extractor-0.1.0-seed:0.1.0", +
+    "Registry": "docker.io", +
+    "Org": "geointseed", +
+    "JobName": "extractor", +
+    "Title": "Extractor", +
+    "Maintainer": "John Tobe", +
+    "Email": "jtobe@example.com", +
+    "MaintOrg": "", +
+    "Description": "Read's a zip file and extracts the contents", +
+    "JobVersion": "0.1.0", +
+    "PackageVersion": "0.1.0" +
+  }, +
                  ]
 
 |Error Response
@@ -367,11 +387,21 @@ Retrieves an image
 |       Code: 200 +
         Content: +
                    { +
-                     "ID": 3, +
-                     "RegistryId": 1, +
-                     "Name": "my-job-0.1.0-seed:0.1.0", +
-                     "Registry": "localhost:5000", +
-                     "Org": "", +
+  "ID": 1, +
+  "RegistryId": 1, +
+  "JobId": 1, +
+  "JobVersionId": 1, +
+  "FullName": "my-job-0.1.0-seed:0.1.0", +
+  "ShortName": "my-job", +
+  "Title": "My first job", +
+  "Maintainer": "John Doe", +
+  "Email": "jdoe@example.com", +
+  "MaintOrg": "E-corp", +
+  "JobVersion": "0.1.0", +
+  "PackageVersion": "0.1.0", +
+  "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+  "Registry": "docker.io", +
+  "Org": "geointseed", +
                      "Manifest": "{\"seedVersion\":\"0.1.0\",\"job\":{\"name\":\"my-job\",...}}" +
                       <full seed json> link:seed.manifest.json[sample manifest] +
                    }
@@ -418,6 +448,310 @@ Returns the Seed manifest json for the given image id.
 | curl "https://localhost:9000/images/1/manifest"
 |===
 
+=== Job
+
+Jobs are groups of images with the same job name.  A job has a name, title, maintainer, email, organization, description,
+latest job version and latest package version.  It also has a list of images and job versions.
+
+==== List Jobs
+
+Retrieves all of the Jobs that have been scanned from registries
+
+[cols="h,5a"]
+|===
+| URL
+| /jobs
+
+| Method
+| GET
+
+| URL Params
+| None
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: [ +
+{ +
+    "ID": 1, +
+    "Name": "my-job", +
+    "LatestJobVersion": "0.1.0", +
+    "LatestPackageVersion": "0.1.0", +
+    "Title": "My first job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+    "ImageIDs": [0, 1, 2], +
+    "JobVersions": [{JobVersion struct}, {JobVersion struct}...] +
+  }, +
+  { +
+    "ID": 2, +
+    "Name": "another-job", +
+    "LatestJobVersion": "1.0.0", +
+    "LatestPackageVersion": "1.0.0", +
+    "Title": "My second job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "blah blah blah", +
+    "ImageIDs": [3], +
+    "JobVersions": [{JobVersion struct}] +
+  }, +
+                 ]
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:9000/jobs"
+|===
+
+==== Search Jobs
+
+Searches the Seed images that have been scanned from registries and returns jobs for the images matching the given query.  Images are
+returned if the name, organization or seed manifest match the given query.  Images/job versions that are irrelevant to the query
+are omitted from the ImageIDs and JobVersions structures.
+
+[cols="h,5a"]
+|===
+| URL
+| /jobs/search/{query}
+
+| Method
+| GET
+
+| URL Params
+| query = string
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: [ +
+{ +
+    "ID": 1, +
+    "Name": "my-job", +
+    "LatestJobVersion": "0.1.0", +
+    "LatestPackageVersion": "0.1.0", +
+    "Title": "My first job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+    "ImageIDs": [0, 2], +
+    "JobVersions": [{JobVersion struct}, {JobVersion struct}...] +
+  }, +
+  { +
+    "ID": 2, +
+    "Name": "another-job", +
+    "LatestJobVersion": "1.0.0", +
+    "LatestPackageVersion": "1.0.0", +
+    "Title": "My second job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "blah blah blah", +
+    "ImageIDs": [3], +
+    "JobVersions": [{JobVersion struct}] +
+  }, +
+                 ]
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:9000/jobs/search/test"
+|===
+
+==== Get Job
+
+Retrieves a job
+
+[cols="h,5a"]
+|===
+| URL
+| /jobs/{id}
+
+| Method
+| GET
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: +
+{ +
+    "ID": 1, +
+    "Name": "my-job", +
+    "LatestJobVersion": "0.1.0", +
+    "LatestPackageVersion": "0.1.0", +
+    "Title": "My first job", +
+    "Maintainer": "John Doe", +
+    "Email": "jdoe@example.com", +
+    "MaintOrg": "E-corp", +
+    "Description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count", +
+    "ImageIDs": [0, 2], +
+    "JobVersions": [{JobVersion struct}, {JobVersion struct}...] +
+  }
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid ID" } +
+        Code: 404 File not found +
+        Content: { error : "No job found with that ID" }
+
+|Sample Call
+| curl -X "GET" http://localhost:9000/jobs/1
+|===
+
+=== Job Version
+
+Job Versions are groups of images with the same job name and the same job version.  A job version has a job name, job id,
+job version, latest package version and a list of images.
+
+==== List Job Versions
+
+Retrieves all of the Job Versions that have been scanned from registries
+
+[cols="h,5a"]
+|===
+| URL
+| /job-versions
+
+| Method
+| GET
+
+| URL Params
+| None
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: [ +
+{ +
+    "ID": 1, +
+    "JobName": "my-job", +
+    "JobId": "1", +
+    "JobVersion": "0.1.0", +
+    "LatestPackageVersion": "0.1.0", +
+    "Images": [{Image struct}, {Image struct}...] +
+  }, +
+  { +
+    "ID": 2, +
+    "JobName": "my-job", +
+    "JobId": "1", +
+    "JobVersion": "0.2.0", +
+    "LatestPackageVersion": "0.2.0", +
+    "Images": [{Image struct}] +
+  }, +
+                 ]
+
+|Error Response
+|       None
+
+|Sample Call
+| curl "https://localhost:9000/job-versions"
+|===
+
+==== Get Job Versions
+
+Returns the job versions for a specific job
+
+[cols="h,5a"]
+|===
+| URL
+| /jobs/{id}/job-versions
+
+| Method
+| GET
+
+| URL Params
+| id = int
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: [ +
+{ +
+    "ID": 1, +
+    "JobName": "my-job", +
+    "JobId": "1", +
+    "JobVersion": "0.1.0", +
+    "LatestPackageVersion": "0.1.0", +
+    "Images": [{Image struct}, {Image struct}...] +
+  }, +
+  { +
+    "ID": 2, +
+    "JobName": "my-job", +
+    "JobId": "1", +
+    "JobVersion": "0.2.0", +
+    "LatestPackageVersion": "0.2.0", +
+    "Images": [{Image struct}] +
+  }, +
+                 ]
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid ID" } +
+        Code: 404 File not found +
+        Content: { error : "No job found with that ID" }
+
+|Sample Call
+| curl "https://localhost:9000/jobs/1/job-versions"
+|===
+
+==== Get Job Version
+
+Retrieves a job version
+
+[cols="h,5a"]
+|===
+| URL
+| /job-versions/{id}
+
+| Method
+| GET
+
+| URL Params
+| id = integer
+
+| Data Params
+| None
+
+| Success Response
+|       Code: 200 +
+        Content: +
+{ +
+    "ID": 1, +
+    "JobName": "my-job", +
+    "JobId": "1", +
+    "JobVersion": "0.1.0", +
+    "LatestPackageVersion": "0.1.0", +
+    "Images": [{Image struct}, {Image struct}...] +
+  }
+
+|Error Response
+|       Code: 400 Bad Request +
+        Content: { error : "Invalid ID" } +
+        Code: 404 File not found +
+        Content: { error : "No job version found with that ID" }
+
+|Sample Call
+| curl -X "GET" http://localhost:9000/jobs/1
+|===
+
 === User
 
 Users can be added, deleted, listed and used to login. A user consists of a username, password, and a role.
@@ -429,7 +763,7 @@ Retrieves a user
 [cols="h,5a"]
 |===
 | URL
-| /registry/{id}
+| /users/{id}
 
 | Method
 | GET
@@ -461,7 +795,7 @@ Adds a user to the system.  Requires a valid token from an admin user.
 [cols="h,5a"]
 |===
 | URL
-| /user/add
+| /users/add
 
 | Method
 | POST
@@ -485,7 +819,7 @@ Adds a user to the system.  Requires a valid token from an admin user.
         Content: { error : "Error unmarshalling json. " }
 
 |Sample Call
-|curl -H "Content-Type: application/json" -d '{"username":"admin", "password": "hunter17", "role": "admin"}' -H "Authorization: Token <token>" http://localhost:9000/user/add
+|curl -H "Content-Type: application/json" -d '{"username":"admin", "password": "hunter17", "role": "admin"}' -H "Authorization: Token <token>" http://localhost:9000/users/add
 |===
 
 ==== Delete User
@@ -495,7 +829,7 @@ Removes a user from the system.  Requires a valid token from an admin user.
 [cols="h,5a"]
 |===
 | URL
-| /user/delete/{id}
+| /users/delete/{id}
 
 | Method
 | DELETE
@@ -519,7 +853,7 @@ Removes a user from the system.  Requires a valid token from an admin user.
         Content: { error : "User does not have permission to perform this action" }
 
 |Sample Call
-| curl -X "DELETE" -H "Authorization: Token <token>" http://localhost:9000/user/delete/1
+| curl -X "DELETE" -H "Authorization: Token <token>" http://localhost:9000/users/delete/1
 |===
 
 ==== List Users

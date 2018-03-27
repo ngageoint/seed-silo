@@ -31,7 +31,7 @@ type Exception struct {
 const AdminRole = "admin"
 
 func CreateUser(db *sql.DB) {
-	// create table if not exists
+	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS User(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,7 +60,7 @@ func CreateUser(db *sql.DB) {
 
 func AddUser(db *sql.DB, r User) (int, error) {
 	sql_addreg := `
-	INSERT OR REPLACE INTO User(
+	INSERT INTO User(
 		username,
 		password,
 	    role
