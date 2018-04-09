@@ -1,14 +1,14 @@
 {
-  "seedVersion": "0.1.0",
+  "seedVersion": "1.0.0",
   "job": {
     "name": "my-job",
-    "jobVersion": "0.1.0",
-    "packageVersion": "0.1.0",
+    "jobVersion": "1.0.0",
+    "packageVersion": "1.0.0",
     "title": "My first job",
-    "description": "Reads an HDF5 file and outputs two TIFF images, a CSV and manifest containing cell_count",
+    "description": "Reads an HDF5 file and outputs two png images, a CSV and manifest containing cell_count",
     "tags": [
       "hdf5",
-      "tiff",
+      "png",
       "csv",
       "image processing"
     ],
@@ -21,7 +21,7 @@
     },
     "timeout": 3600,
     "interface": {
-      "command": "${INPUT_FILE} ${OUTPUT_DIR}",
+      "command": "${INPUT_FILE} ${OUTPUT_DIR} ${VERSION}",
       "inputs": {
         "files": [
           {
@@ -29,22 +29,31 @@
             "required": true,
             "mediaTypes": [
               "image/x-hdf5-image"
-            ]
+            ],
+            "partial": true
+          }
+        ],
+        "json": [
+          {
+            "name": "INPUT_JSON",
+            "type": "string",
+            "required": true
           }
         ]
       },
       "outputs": {
         "files": [
           {
-            "name": "output_file_tiffs",
-            "mediaType": "image/tiff",
-            "count": "2",
-            "pattern": "outfile*.tif"
+            "name": "output_file_pngs",
+            "mediaType": "image/png",
+            "multiple": true,
+            "pattern": "outfile*.png"
           },
           {
             "name": "output_file_csv",
             "mediaType": "text/csv",
-            "pattern": "outfile*.csv"
+            "pattern": "outfile*.csv",
+            "required": false
           }
         ],
         "json": [
@@ -52,6 +61,11 @@
             "name": "cell_count",
             "key": "cellCount",
             "type": "integer"
+          },
+          {
+            "name": "dummy",
+            "type": "integer",
+            "required": false
           }
         ]
       },
@@ -60,21 +74,34 @@
           "name": "MOUNT_PATH",
           "path": "/the/container/path",
           "mode": "ro"
+        },
+        {
+          "name": "WRITE_PATH",
+          "path": "/write",
+          "mode": "rw"
         }
       ],
       "settings": [
         {
+          "name": "VERSION",
+          "secret": false
+        },
+        {
           "name": "DB_HOST",
           "secret": false
+        },
+        {
+          "name": "DB_PASS",
+          "secret": true
         }
       ]
     },
     "resources": {
       "scalar": [
-        { "name": "cpu", "value": 10.0 },
-        { "name": "mem", "value": 10240.0 },
-        { "name": "sharedMem", "value": 0.0 },
-        { "name": "disk", "value": 10.0, "inputMultiplier": 4.0 }
+        { "name": "cpus", "value": 1.0 },
+        { "name": "mem", "value": 1024.0 },
+        { "name": "sharedMem", "value": 1024.0 },
+        { "name": "disk", "value": 1000.0, "inputMultiplier": 4.0 }
       ]
     },
     "errors": [

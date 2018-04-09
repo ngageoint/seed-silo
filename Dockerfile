@@ -1,15 +1,15 @@
-FROM docker.platform.cloud.coe.ic.gov/centos7
+FROM $REGISTRY/centos7
 
 LABEL VERSION="0.2.0" \
-    RUN="docker run -d -p 9000:9000 -p 80:80 -v <silo db/log location>:/usr/silo docker.platform.cloud.coe.ic.gov/nga-r-dev/silo" \
-    SOURCE="https://sc.appdev.proj.coe.ic.gov/dayton-giat/silo" \
+    RUN="docker run -d -p 9000:9000 -p 80:80 -v <silo db/log location>:/usr/silo silo" \
+    SOURCE="https://github.com/ngageoint/seed-silo" \
     DESCRIPTION="seed-silo api" \
     CLASSIFICATION="UNCLASSIFIED"
 
 RUN mkdir -p silo \
     && yum install wget -y \
     && update-ca-trust enable \
-    && wget http://pki-ldap.ismc.ic.gov/ -r -A *.cer -nd -nv -P /etc/pki/ca-trust/source/anchors/ \
+    && wget $PKIURL -r -A *.cer -nd -nv -P /etc/pki/ca-trust/source/anchors/ \
     && update-ca-trust extract
 
 WORKDIR /silo
