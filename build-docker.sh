@@ -12,6 +12,20 @@ then
     VERSION=snapshot
 fi
 
+REGISTRY=$1
+if [[ "${REGISTRY}x" == "x" ]]
+then
+    echo Missing registry parameter - setting to docker hub
+    REGISTRY=docker.io
+fi
+
+ORG=$1
+if [[ "${ORG}x" == "x" ]]
+then
+    echo Missing org parameter - setting to geoint
+    ORG=geoint
+fi
+
 UNAME=$(uname -s)
 
 case "${UNAME}" in
@@ -20,8 +34,7 @@ esac
 
 build-silo.sh
 
-${SUDO} docker build . -t silo:$VERSION
-${SUDO} docker tag silo:$VERSION $REGISTRY/$ORG/silo:$VERSION
+${SUDO} docker build --build-arg IMAGE=centos:centos7 . -t $REGISTRY/$ORG/silo:$VERSION
 ${SUDO} docker push $REGISTRY/$ORG/silo:$VERSION
 
 popd >/dev/null
