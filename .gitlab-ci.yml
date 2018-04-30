@@ -24,6 +24,7 @@ silo-build:
     untracked: true
   script:
     - go get github.com/ngageoint/seed-common/...
+    - mv /builds/ $GOPATH/src/github.com/company/project
     - go build -o silo main.go
   only:
     - master
