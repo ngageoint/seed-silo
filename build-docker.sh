@@ -12,11 +12,11 @@ then
     VERSION=snapshot
 fi
 
-BASEIMAGE=$2
-if [[ "${BASEIMAGE}x" == "x" ]]
+CENTOS_IMAGE=$2
+if [[ "${CENTOS_IMAGE}x" == "x" ]]
 then
-    echo Missing base iamge parameter - setting to centos:centos7
-    BASEIMAGE=centos:centos7
+    echo Missing centos image parameter - setting to centos:centos7
+    CENTOS_IMAGE=centos:centos7
 fi
 
 REGISTRY=$3
@@ -41,7 +41,7 @@ esac
 
 build-silo.sh
 
-${SUDO} docker build --build-arg IMAGE=$BASEIMAGE . -t $REGISTRY/$ORG/silo:$VERSION
+${SUDO} docker build --build-arg IMAGE=$CENTOS_IMAGE . -t $REGISTRY/$ORG/silo:$VERSION
 ${SUDO} docker push $REGISTRY/$ORG/silo:$VERSION
 
 popd >/dev/null

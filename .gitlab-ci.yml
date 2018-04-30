@@ -1,0 +1,31 @@
+# Environment variables that must be set in Gitlab CI/CD Pipeline variables
+# CENTOS_IMAGE
+# DOCKER_IMAGE
+# DIND
+# DOCKER_USER
+# DOCKER_PASS
+# VERSION
+# REGISTRY
+# ORG
+
+variables:
+  IMAGE_PREFIX: "silo"
+
+image: ${DOCKER_IMAGE}
+
+services:
+  - ${DIND}
+
+before_script:
+  - docker login -u "$DOCKER_USER" -p "$DOCKER_PASS" $REGISTRY
+
+stages:
+  - package
+
+silo:
+  stage: package
+  script:
+    - ./build-docker.sh $VERSION $CENTOS_IMAGE $REGISTRY $ORG
+  only:
+    - master
+    - tags
