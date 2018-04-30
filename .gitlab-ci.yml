@@ -21,7 +21,7 @@ stages:
   - package
 
 silo-build:
-  image: ${DOCKER_IMAGE}
+  image: ${GO_IMAGE}
   stage: build
   artifacts:
     untracked: true
@@ -32,7 +32,7 @@ silo-build:
     - tags
 
 silo-package:
-  image: ${GO_IMAGE}
+  image: ${DOCKER_IMAGE}
   stage: package
   dependencies:
     - silo-build
