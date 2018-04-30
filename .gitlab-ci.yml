@@ -17,7 +17,7 @@ services:
   - ${DIND}
 
 before_script:
-  - docker login -u "$DOCKER_USER" -p "$DOCKER_PASS" $REGISTRY
+  - docker login -u $DOCKER_USER -p $DOCKER_PASS $REGISTRY
 
 stages:
   - package
