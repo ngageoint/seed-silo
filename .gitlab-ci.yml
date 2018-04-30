@@ -23,6 +23,7 @@ silo-build:
   artifacts:
     untracked: true
   script:
+    - go get github.com/ngageoint/seed-common/...
     - go build -o silo main.go
   only:
     - master
