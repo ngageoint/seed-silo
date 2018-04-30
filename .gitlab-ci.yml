@@ -13,9 +13,6 @@ variables:
 services:
   - ${DIND}
 
-before_script:
-  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $REGISTRY
-
 stages:
   - build
   - package
@@ -37,6 +34,7 @@ silo-package:
   dependencies:
     - silo-build
   script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $REGISTRY
     - docker build --build-arg IMAGE=$CENTOS_IMAGE . -t $REGISTRY/$ORG/silo:$VERSION
     - docker push $REGISTRY/$ORG/silo:$VERSION
   only:
