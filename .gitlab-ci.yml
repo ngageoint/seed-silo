@@ -3,29 +3,40 @@
 # CI_COMMIT_TAG
 # DOCKER_IMAGE
 # DIND
-# DOCKER_USER
-# DOCKER_PASS
+# $CI_BUILD_TOKEN
 # REGISTRY
 # ORG
 
 variables:
   IMAGE_PREFIX: "silo"
 
-image: ${DOCKER_IMAGE}
-
 services:
   - ${DIND}
 
 before_script:
-  - docker login -u $DOCKER_USER -p $DOCKER_PASS $REGISTRY
+  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $REGISTRY
 
 stages:
+  - build
   - package
 
-silo:
-  stage: package
+silo-build:
+  image: ${DOCKER_IMAGE}
+  stage: build
+  artifacts:
+    untracked: true
   script:
     - go build -o silo main.go
+  only:
+    - master
+    - tags
+
+silo-package:
+  image: ${GO_IMAGE}
+  stage: package
+  dependencies:
+    - silo-build
+  script:
     - docker build --build-arg IMAGE=$CENTOS_IMAGE . -t $REGISTRY/$ORG/silo:$VERSION
     - docker push $REGISTRY/$ORG/silo:$VERSION
   only:
