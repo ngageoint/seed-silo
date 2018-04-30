@@ -25,7 +25,7 @@ stages:
 silo:
   stage: package
   script:
-    - ./build-silo.sh
+    - go build -o silo main.go
     - docker build --build-arg IMAGE=$CENTOS_IMAGE . -t $REGISTRY/$ORG/silo:$VERSION
     - docker push $REGISTRY/$ORG/silo:$VERSION
   only:
