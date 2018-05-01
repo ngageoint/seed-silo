@@ -1,5 +1,5 @@
 {
-  "seedVersion": "0.1.0",
+  "seedVersion": "1.0.0",
   "job": {
     "name": "my-job",
     "jobVersion": "0.1.0",
@@ -26,10 +26,18 @@
         "files": [
           {
             "name": "INPUT_FILE",
-            "required": true,
             "mediaTypes": [
               "image/x-hdf5-image"
-            ]
+            ],
+            "multiple": false,
+            "partial": false,
+            "required": true
+          }
+        ],
+        "json": [
+          {
+            "name": "INPUT_JSON",
+            "type": "object"
           }
         ]
       },
@@ -38,20 +46,24 @@
           {
             "name": "output_file_tiffs",
             "mediaType": "image/tiff",
-            "count": "2",
-            "pattern": "outfile*.tif"
+            "multiple": true,
+            "pattern": "outfile*.tif",
+            "required": true
           },
           {
             "name": "output_file_csv",
             "mediaType": "text/csv",
-            "pattern": "outfile*.csv"
+            "multiple": false,
+            "pattern": "outfile*.csv",
+            "required": false
           }
         ],
         "json": [
           {
             "name": "cell_count",
             "key": "cellCount",
-            "type": "integer"
+            "type": "integer",
+            "required": true
           }
         ]
       },
@@ -71,7 +83,7 @@
     },
     "resources": {
       "scalar": [
-        { "name": "cpu", "value": 10.0 },
+        { "name": "cpus", "value": 1.0 },
         { "name": "mem", "value": 10240.0 },
         { "name": "sharedMem", "value": 0.0 },
         { "name": "disk", "value": 10.0, "inputMultiplier": 4.0 }

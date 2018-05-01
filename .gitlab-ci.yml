@@ -1,0 +1,48 @@
+# Environment variables that must be set in Gitlab CI/CD Pipeline variables
+# CENTOS_IMAGE
+# CI_COMMIT_TAG
+# DOCKER_IMAGE
+# DIND
+# $CI_BUILD_TOKEN
+# REGISTRY
+# ORG
+
+variables:
+  IMAGE_PREFIX: "silo"
+
+services:
+  - ${DIND}
+
+stages:
+  - build
+  - package
+
+silo-build:
+  image: ${GO_IMAGE}
+  stage: build
+  artifacts:
+    untracked: true
+  script:
+    - go get github.com/ngageoint/seed-common/...
+    - mkdir -p $GOPATH/src/github.com/ngageoint
+    - ls -la /builds/ngageoint/seed-silo
+    - ln -s /builds/ngageoint/seed-silo $GOPATH/src/github.com/ngageoint/seed-silo
+    - cd $GOPATH/src/github.com/ngageoint/seed-silo
+    - ls -la
+    - go build -o silo main.go
+  only:
+    - master
+    - tags
+
+silo-package:
+  image: ${DOCKER_IMAGE}
+  stage: package
+  dependencies:
+    - silo-build
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $REGISTRY
+    - docker build --build-arg IMAGE=$CENTOS_IMAGE . -t $REGISTRY/$ORG/seed-silo:$CI_COMMIT_TAG
+    - docker push $REGISTRY/$ORG/seed-silo:$CI_COMMIT_TAG
+  only:
+    - master
+    - tags
