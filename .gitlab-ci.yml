@@ -25,10 +25,8 @@ silo-build:
   script:
     - go get github.com/ngageoint/seed-common/...
     - mkdir -p $GOPATH/src/github.com/ngageoint
-    - ls -la /builds/ngageoint/seed-silo
-    - ln -s /builds/ngageoint/seed-silo $GOPATH/src/github.com/ngageoint/seed-silo
+    - ln -s $(pwd) $GOPATH/src/github.com/ngageoint/seed-silo
     - cd $GOPATH/src/github.com/ngageoint/seed-silo
-    - ls -la
     - go build -o silo main.go
   only:
     - master
