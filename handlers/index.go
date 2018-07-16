@@ -152,6 +152,7 @@ func checkError(err error, url, username, password string) string {
 	}
 
 	errStr := err.Error()
+	util.PrintUtil("ERROR: %s", err.Error())
 
 	humanError := ""
 

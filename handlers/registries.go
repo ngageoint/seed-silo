@@ -94,6 +94,7 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 		humanError := checkError(err, url, username, password)
 		respondWithError(w, http.StatusBadRequest, humanError)
 		log.Print(humanError)
+		log.Print(err)
 	} else {
 		id, err := models.AddRegistry(db, reginfo)
 		if err != nil {
@@ -208,7 +209,7 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/txt; charset=UTF-8")
 	w.WriteHeader(http.StatusAccepted)
-	fmt.Fprintln(w, "Scanning registries...")
+	log.Print("Scanning registries...")
 
 	dbImages, err := Scan(w, r, registries)
 	if err != nil {
@@ -245,7 +246,7 @@ func Scan(w http.ResponseWriter, req *http.Request, registries []models.Registry
 	dbImages := []models.Image{}
 	var err error
 	for _, r := range registries {
-		fmt.Fprintf(w, "Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
+		log.Printf("Scanning registry %s... \n url: %s \n org: %s \n", r.Name, r.Url, r.Org)
 		registry, err := registry.CreateRegistry(r.Url, r.Org, r.Username, r.Password)
 		if err != nil {
 			humanError := checkError(err, r.Url, r.Username, r.Password)
