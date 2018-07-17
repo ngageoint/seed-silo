@@ -33,6 +33,12 @@ then
     ORG=geoint
 fi
 
+CERT_PATH=$5
+if [[ "${CERT_PATH}x" == "x" ]]
+then
+    echo Missing cert path parameter, no certs will be added to image
+fi
+
 UNAME=$(uname -s)
 
 case "${UNAME}" in
@@ -41,7 +47,7 @@ esac
 
 build-silo.sh
 
-${SUDO} docker build --build-arg IMAGE=$CENTOS_IMAGE . -t $REGISTRY/$ORG/silo:$VERSION
+${SUDO} docker build --build-arg IMAGE=$CENTOS_IMAGE --build-arg CERT_PATH=$CERT_PATH . -t $REGISTRY/$ORG/silo:$VERSION
 ${SUDO} docker push $REGISTRY/$ORG/silo:$VERSION
 
 popd >/dev/null
