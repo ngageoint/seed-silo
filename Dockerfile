@@ -2,8 +2,7 @@ ARG IMAGE=centos:centos7
 FROM $IMAGE
 ARG CERT_PATH
 
-LABEL VERSION="0.2.0" \
-    RUN="docker run -d -p 9000:9000 -p 80:80 -v <silo db/log location>:/usr/silo silo" \
+LABEL RUN="docker run -d -p 9000:9000 -p 80:80 -v <silo db/log location>:/usr/silo silo" \
     SOURCE="https://github.com/ngageoint/seed-silo" \
     DESCRIPTION="seed-silo api" \
     CLASSIFICATION="UNCLASSIFIED"
