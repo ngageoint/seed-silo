@@ -45,7 +45,7 @@ case "${UNAME}" in
     Linux*)     SUDO=sudo;;
 esac
 
-build-silo.sh
+./build-silo.sh
 
 ${SUDO} docker build --build-arg IMAGE=$CENTOS_IMAGE --build-arg CERT_PATH=$CERT_PATH . -t $REGISTRY/$ORG/silo:$VERSION
 ${SUDO} docker push $REGISTRY/$ORG/silo:$VERSION
