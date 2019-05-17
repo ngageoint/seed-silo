@@ -12,7 +12,8 @@ WORKDIR /silo
 COPY silo /silo
 
 # Get root certs, if certs arg is present
-RUN if [ "x$CERT_PATH" != "x" ] ; then yum install -y wget && update-ca-trust enable && wget $CERT_PATH -r -A *.cer -nd -nv -P /etc/pki/ca-trust/source/anchors/ && update-ca-trust extract; fi
+RUN if [ "x$CERT_PATH" != "x" ] ; then yum install -y wget && update-ca-trust enable && wget $CERT_PATH -r -A *.cer -nd -nv -P /etc/pki/ca-trust/source/anchors/ && update-ca-trust extract; fi \
+    && mkdir /usr/silo
 
 # Our app will run on port 9000
 EXPOSE 9000
