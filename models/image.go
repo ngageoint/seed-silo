@@ -64,7 +64,15 @@ func SimplifyImage(img Image) SimpleImage {
 	return simple
 }
 
-func CreateImageTable(db *sql.DB) {
+func CreateImageTable(db *sql.DB, type string) {
+    if type == "sqlite" {
+        CreateImageTableLite(db)
+    } else if type == "postgres" {
+        CreateImageTablePG(db)
+    }
+}
+
+func CreateImageTableLite(db *sql.DB) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Image(
@@ -105,7 +113,48 @@ func CreateImageTable(db *sql.DB) {
 	}
 }
 
-func ResetImageTable(db *sql.DB) error {
+func CreateImageTablePG(db *sql.DB) {
+	// create table if it does not exist
+	sql_table := `
+	CREATE TABLE IF NOT EXISTS Image(
+		id SERIAL PRIMARY KEY,
+		registry_id INTEGER NOT NULL,
+		job_id INTEGER,
+		job_version_id INTEGER,
+		full_name TEXT,
+		short_name TEXT,
+		title TEXT,
+		maintainer TEXT,
+		email TEXT,
+		maint_org TEXT,
+		job_version TEXT,
+		package_version TEXT,
+		description TEXT,
+		registry TEXT,
+		org TEXT,
+		manifest TEXT,
+		CONSTRAINT fk_inv_registry_id
+		    FOREIGN KEY (registry_id)
+		    REFERENCES RegistryInfo (id)
+		    ON DELETE CASCADE,
+		CONSTRAINT fk_inv_job_id
+		    FOREIGN KEY (job_id)
+		    REFERENCES Job (id)
+		    ON DELETE SET NULL,
+		CONSTRAINT fk_inv_job_version_id
+		    FOREIGN KEY (job_version_id)
+		    REFERENCES JobVersion (id)
+		    ON DELETE SET NULL
+	);
+	`
+
+	_, err := db.Exec(sql_table)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ResetImageTableLite(db *sql.DB) error {
 	// delete all images and reset the counter
 	delete := `DELETE FROM Image;`
 
@@ -122,6 +171,18 @@ func ResetImageTable(db *sql.DB) error {
 	}
 
 	return err2
+}
+
+func ResetImageTablePG(db *sql.DB) error {
+	// delete all images and reset the counter
+	delete := `TRUNCATE Image RESTART IDENTITY CASCADE;`
+
+	_, err := db.Exec(delete)
+	if err != nil {
+		panic(err)
+	}
+
+	return err
 }
 
 func StoreImages(db *sql.DB, images []Image) {

@@ -29,7 +29,7 @@ var imageID int
 func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
-	db = database.InitDB("./silo-test.db")
+	db = database.InitSqliteDB("./silo-test.db")
 	router, err = route.NewRouter()
 	if err != nil {
 		os.Remove("./silo-test.db")

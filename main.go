@@ -13,10 +13,17 @@ import (
 )
 
 func main() {
-	db := database.InitDB("/usr/silo/seed-silo.db")
+    url := os.Getenv("DATABASE_URL")
+    if url == ""{
+        db := database.InitSqliteDB("/usr/silo/seed-silo.db")
+        defer db.Close()
+	} else {
+        db := database.InitPostgresDB(url)
+        defer db.Close()
+	}
+
 	router, err := route.NewRouter()
 	util.InitPrinter(util.PrintLog)
-	defer db.Close()
 
 	if err != nil {
 		log.Fatalf("Error initializing router: %v\n", err.Error())

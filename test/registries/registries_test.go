@@ -27,7 +27,8 @@ var router *mux.Router
 func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
-	db = database.InitDB("./silo-test.db")
+	// db = database.InitSqliteDB("./silo-test.db")
+	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/scale?sslmode=disable")
 	router, err = route.NewRouter()
 	if err != nil {
 		os.Remove("./silo-test.db")
