@@ -23,7 +23,7 @@ type DisplayRegistry struct {
 	Org      string `db:"org"`
 }
 
-func CreateRegistryTable(db *sql.DB, type string) {
+func CreateRegistryTable(db *sql.DB, dbType string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS RegistryInfo(
@@ -36,8 +36,8 @@ func CreateRegistryTable(db *sql.DB, type string) {
 	);
 	`
 
-	if type == "postgres" {
-	    strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	if dbType == "postgres" {
+	    sql_table = strings.Replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
 	}
 
 	_, err := db.Exec(sql_table)

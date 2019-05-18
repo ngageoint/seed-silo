@@ -65,7 +65,7 @@ func SimplifyImage(img Image) SimpleImage {
 	return simple
 }
 
-func CreateImageTable(db *sql.DB, type string) {
+func CreateImageTable(db *sql.DB, dbType string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Image(
@@ -100,8 +100,8 @@ func CreateImageTable(db *sql.DB, type string) {
 	);
 	`
 
-	if type == "postgres" {
-        strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	if dbType == "postgres" {
+        sql_table = strings.Replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
     }
 
 	_, err := db.Exec(sql_table)
@@ -110,10 +110,10 @@ func CreateImageTable(db *sql.DB, type string) {
 	}
 }
 
-func ResetImageTable(db *sql.DB, type string) error {
-    if type == "sqlite" {
+func ResetImageTable(db *sql.DB, dbType string) error {
+    if dbType == "sqlite" {
         return ResetImageTableLite(db)
-    } else if type == "postgres" {
+    } else if dbType == "postgres" {
         return ResetImageTablePG(db)
     } else {
         panic("unsupported database type")

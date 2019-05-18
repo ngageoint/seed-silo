@@ -33,17 +33,7 @@ func SetJobInfo(job *Job, img Image) {
 	job.Description = img.Description
 }
 
-func CreateJobTable(db *sql.DB, type string) {
-    if type == "sqlite" {
-        CreateJobTableLite(db)
-    } else if type == "postgres" {
-        CreateJobTablePG(db)
-    } else {
-        panic("unsupported database type")
-    }
-}
-
-func CreateJobTable(db *sql.DB, type string) {
+func CreateJobTable(db *sql.DB, dbType string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Job(
@@ -58,8 +48,8 @@ func CreateJobTable(db *sql.DB, type string) {
 		description TEXT
 	);
 	`
-	if type == "postgres" {
-	    strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	if dbType == "postgres" {
+	    sql_table = strings.Replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
 	}
 
 	_, err := db.Exec(sql_table)
@@ -68,10 +58,10 @@ func CreateJobTable(db *sql.DB, type string) {
 	}
 }
 
-func ResetJobTable(db *sql.DB, type string) error {
-    if type == "sqlite" {
+func ResetJobTable(db *sql.DB, dbType string) error {
+    if dbType == "sqlite" {
         return ResetJobTableLite(db)
-    } else if type == "postgres" {
+    } else if dbType == "postgres" {
         return ResetJobTablePG(db)
     } else {
         panic("unsupported database type")
@@ -329,7 +319,7 @@ func SetJobVersionInfo(jv *JobVersion, img Image) {
 	jv.LatestPackageVersion = img.PackageVersion
 }
 
-func CreateJobVersionTable(db *sql.DB, type string) {
+func CreateJobVersionTable(db *sql.DB, dbType string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS JobVersion(
@@ -346,8 +336,8 @@ func CreateJobVersionTable(db *sql.DB, type string) {
 	);
 	`
 
-	if type == "postgres" {
-        strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	if dbType == "postgres" {
+        sql_table = strings.Replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
     }
 
 	_, err := db.Exec(sql_table)
@@ -356,10 +346,10 @@ func CreateJobVersionTable(db *sql.DB, type string) {
 	}
 }
 
-func ResetJobVersionTable(db *sql.DB, type string) error {
-    if type == "sqlite" {
+func ResetJobVersionTable(db *sql.DB, dbType string) error {
+    if dbType == "sqlite" {
         return ResetJobVersionTableLite(db)
-    } else if type == "postgres" {
+    } else if dbType == "postgres" {
         return ResetJobVersionTablePG(db)
     } else {
         panic("unsupported database type")

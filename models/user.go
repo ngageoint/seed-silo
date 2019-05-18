@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
+type SiloUser struct {
 	ID       int    `db:id`
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -31,18 +31,18 @@ type Exception struct {
 
 const AdminRole = "admin"
 
-func CreateUser(db *sql.DB, type string) {
+func CreateUser(db *sql.DB, dbType string) {
 	// create table if it does not exist
 	sql_table := `
-	CREATE TABLE IF NOT EXISTS User(
+	CREATE TABLE IF NOT EXISTS SiloUser(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL UNIQUE,
 		password TEXT,
 		role TEXT
 	);
 	`
-	if type == "postgres" {
-	    strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	if dbType == "postgres" {
+	    sql_table = strings.Replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
 	}
 
 	_, err := db.Exec(sql_table)
@@ -53,7 +53,7 @@ func CreateUser(db *sql.DB, type string) {
 	users, _ := GetUsers(db)
 	if len(users) == 0 {
 		//add default admin
-		var admin= User{Username: "admin", Password: "spicy-pickles17!", Role: AdminRole}
+		var admin= SiloUser{Username: "admin", Password: "spicy-pickles17!", Role: AdminRole}
 		_, err = AddUser(db, admin)
 
 		if err != nil {
@@ -62,9 +62,9 @@ func CreateUser(db *sql.DB, type string) {
 	}
 }
 
-func AddUser(db *sql.DB, r User) (int, error) {
+func AddUser(db *sql.DB, r SiloUser) (int, error) {
 	sql_addreg := `
-	INSERT INTO User(
+	INSERT INTO SiloUser(
 		username,
 		password,
 	    role
@@ -92,7 +92,7 @@ func AddUser(db *sql.DB, r User) (int, error) {
 }
 
 func DeleteUser(db *sql.DB, id int) error {
-	_, err := db.Exec("DELETE FROM User WHERE id=$1", id)
+	_, err := db.Exec("DELETE FROM SiloUser WHERE id=$1", id)
 
 	return err
 }
@@ -100,7 +100,7 @@ func DeleteUser(db *sql.DB, id int) error {
 //Get list of users without username for display
 func DisplayUsers(db *sql.DB) ([]DisplayUser, error) {
 	sql_readall := `
-	SELECT id, username, role FROM User
+	SELECT id, username, role FROM SiloUser
 	ORDER BY id ASC
 	`
 
@@ -127,7 +127,7 @@ func DisplayUsers(db *sql.DB) ([]DisplayUser, error) {
 }
 
 func GetUserById(db *sql.DB, id int) (DisplayUser, error) {
-	row := db.QueryRow("SELECT id, username, role FROM User WHERE id=?", id)
+	row := db.QueryRow("SELECT id, username, role FROM SiloUser WHERE id=?", id)
 
 	var item DisplayUser
 	err := row.Scan(&item.ID, &item.Username, &item.Role)
@@ -136,7 +136,7 @@ func GetUserById(db *sql.DB, id int) (DisplayUser, error) {
 }
 
 func GetUserByName(db *sql.DB, username string) (DisplayUser, error) {
-	row := db.QueryRow("SELECT id, username, role FROM User WHERE username=?", username)
+	row := db.QueryRow("SELECT id, username, role FROM SiloUser WHERE username=?", username)
 
 	var item DisplayUser
 	err := row.Scan(&item.ID, &item.Username, &item.Role)
@@ -144,16 +144,16 @@ func GetUserByName(db *sql.DB, username string) (DisplayUser, error) {
 	return item, err
 }
 
-func GetUsers(db *sql.DB) ([]User, error) {
-	rows, err := db.Query("SELECT * FROM User")
+func GetUsers(db *sql.DB) ([]SiloUser, error) {
+	rows, err := db.Query("SELECT * FROM SiloUser")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var result []User
+	var result []SiloUser
 	for rows.Next() {
-		item := User{}
+		item := SiloUser{}
 		err2 := rows.Scan(&item.ID, &item.Username, &item.Password, &item.Role)
 		if err2 != nil {
 			panic(err2)
@@ -174,9 +174,9 @@ func CheckPasswordHash(password, hash string) bool {
 }
 
 func ValidateUser(db *sql.DB, username, password string) (bool, error) {
-	row := db.QueryRow("SELECT * FROM User WHERE username=?", username)
+	row := db.QueryRow("SELECT * FROM SiloUser WHERE username=?", username)
 
-	var item User
+	var item SiloUser
 	err := row.Scan(&item.ID, &item.Username, &item.Password, &item.Role)
 
 	if err != nil {

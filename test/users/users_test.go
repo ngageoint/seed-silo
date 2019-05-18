@@ -26,7 +26,8 @@ var router *mux.Router
 func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
-	db = database.InitSqliteDB("./silo-test.db")
+	// db = database.InitSqliteDB("./silo-test.db")
+	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/scale?sslmode=disable")
 	router, err = route.NewRouter()
 	if err != nil {
 		os.Remove("./silo-test.db")
@@ -146,7 +147,7 @@ func TestLogin(t *testing.T) {
 func clearTable() {
 	db.Exec("DELETE FROM RegistryInfo")
 	db.Exec("DELETE FROM Image")
-	db.Exec("DELETE FROM User")
+	db.Exec("DELETE FROM SiloUser")
 	db.Exec("DELETE FROM sqlite_sequence")
 	db.Exec("DELETE FROM Job")
 	db.Exec("DELETE FROM JobVersion")

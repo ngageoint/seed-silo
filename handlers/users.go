@@ -34,7 +34,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
+	var user models.SiloUser
 	if err := json.Unmarshal(body, &user); err != nil {
 		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
 		return
@@ -81,7 +81,7 @@ func Validate(roles []string, next http.HandlerFunc) http.HandlerFunc {
 				}
 				if token.Valid {
 					context.Set(req, "decoded", token.Claims)
-					var user models.User
+					var user models.SiloUser
 					mapstructure.Decode(token.Claims, &user)
 					if util.ContainsString(roles, user.Role) {
 						next(w, req)
@@ -134,7 +134,7 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var user models.User
+	var user models.SiloUser
 	if err := json.Unmarshal(body, &user); err != nil {
 		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
 		return

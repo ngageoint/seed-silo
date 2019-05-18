@@ -173,14 +173,15 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 	allImages = append(allImages, dbImages...)
 
 	//clear out job table
-	err = models.ResetJobTable(db)
+	dbType := database.GetDbType()
+	err = models.ResetJobTable(db, dbType)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	//clear out job version table
-	err = models.ResetJobVersionTable(db)
+	err = models.ResetJobVersionTable(db, dbType)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -217,21 +218,22 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//clear out image table before scanning
-	err = models.ResetImageTable(db)
+	dbType := database.GetDbType()
+	err = models.ResetImageTable(db, dbType)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	//clear out job table
-	err = models.ResetJobTable(db)
+	err = models.ResetJobTable(db, dbType)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	//clear out job version table
-	err = models.ResetJobVersionTable(db)
+	err = models.ResetJobVersionTable(db, dbType)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return

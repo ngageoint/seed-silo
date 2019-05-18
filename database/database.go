@@ -41,15 +41,19 @@ func InitPostgresDB(url string) *sql.DB {
 	data = db
 	dbType = "postgres"
 
-	models.CreateImageTable(db, dbType)
 	models.CreateRegistryTable(db, dbType)
-	models.CreateUser(db, dbType)
 	models.CreateJobTable(db, dbType)
 	models.CreateJobVersionTable(db, dbType)
+	models.CreateImageTable(db, dbType)
+	models.CreateUser(db, dbType)
 
 	return db
 }
 
 func GetDB() *sql.DB {
-	return data, dbType
+	return data
+}
+
+func GetDbType() string {
+	return dbType
 }
