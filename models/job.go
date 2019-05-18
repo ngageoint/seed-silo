@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"log"
+	"strings"
 
 	"github.com/ngageoint/seed-common/util"
 )
@@ -32,7 +33,17 @@ func SetJobInfo(job *Job, img Image) {
 	job.Description = img.Description
 }
 
-func CreateJobTable(db *sql.DB) {
+func CreateJobTable(db *sql.DB, type string) {
+    if type == "sqlite" {
+        CreateJobTableLite(db)
+    } else if type == "postgres" {
+        CreateJobTablePG(db)
+    } else {
+        panic("unsupported database type")
+    }
+}
+
+func CreateJobTable(db *sql.DB, type string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Job(
@@ -47,6 +58,9 @@ func CreateJobTable(db *sql.DB) {
 		description TEXT
 	);
 	`
+	if type == "postgres" {
+	    strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	}
 
 	_, err := db.Exec(sql_table)
 	if err != nil {
@@ -54,7 +68,17 @@ func CreateJobTable(db *sql.DB) {
 	}
 }
 
-func ResetJobTable(db *sql.DB) error {
+func ResetJobTable(db *sql.DB, type string) error {
+    if type == "sqlite" {
+        return ResetJobTableLite(db)
+    } else if type == "postgres" {
+        return ResetJobTablePG(db)
+    } else {
+        panic("unsupported database type")
+    }
+}
+
+func ResetJobTableLite(db *sql.DB) error {
 	// delete all jobs and reset the counter
 	delete := `DELETE FROM Job;`
 
@@ -71,6 +95,18 @@ func ResetJobTable(db *sql.DB) error {
 	}
 
 	return err2
+}
+
+func ResetJobTablePG(db *sql.DB) error {
+	// delete all images and reset the counter
+	delete := `TRUNCATE Job RESTART IDENTITY CASCADE;`
+
+	_, err := db.Exec(delete)
+	if err != nil {
+		panic(err)
+	}
+
+	return err
 }
 
 func BuildJobsList(db *sql.DB, images *[]Image) []Job {
@@ -293,7 +329,7 @@ func SetJobVersionInfo(jv *JobVersion, img Image) {
 	jv.LatestPackageVersion = img.PackageVersion
 }
 
-func CreateJobVersionTable(db *sql.DB) {
+func CreateJobVersionTable(db *sql.DB, type string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS JobVersion(
@@ -310,13 +346,27 @@ func CreateJobVersionTable(db *sql.DB) {
 	);
 	`
 
+	if type == "postgres" {
+        strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+    }
+
 	_, err := db.Exec(sql_table)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func ResetJobVersionTable(db *sql.DB) error {
+func ResetJobVersionTable(db *sql.DB, type string) error {
+    if type == "sqlite" {
+        return ResetJobVersionTableLite(db)
+    } else if type == "postgres" {
+        return ResetJobVersionTablePG(db)
+    } else {
+        panic("unsupported database type")
+    }
+}
+
+func ResetJobVersionTableLite(db *sql.DB) error {
 	// delete all job versions and reset the counter
 	delete := `DELETE FROM JobVersion;`
 
@@ -333,6 +383,18 @@ func ResetJobVersionTable(db *sql.DB) error {
 	}
 
 	return err2
+}
+
+func ResetJobVersionTablePG(db *sql.DB) error {
+	// delete all images and reset the counter
+	delete := `TRUNCATE JobVersion RESTART IDENTITY CASCADE;`
+
+	_, err := db.Exec(delete)
+	if err != nil {
+		panic(err)
+	}
+
+	return err
 }
 
 func AddJobVersion(db *sql.DB, jv JobVersion) (int, error) {

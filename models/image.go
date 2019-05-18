@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"strings"
 
 	"github.com/ngageoint/seed-common/objects"
 	"github.com/ngageoint/seed-common/util"
@@ -65,14 +66,6 @@ func SimplifyImage(img Image) SimpleImage {
 }
 
 func CreateImageTable(db *sql.DB, type string) {
-    if type == "sqlite" {
-        CreateImageTableLite(db)
-    } else if type == "postgres" {
-        CreateImageTablePG(db)
-    }
-}
-
-func CreateImageTableLite(db *sql.DB) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS Image(
@@ -107,51 +100,24 @@ func CreateImageTableLite(db *sql.DB) {
 	);
 	`
 
+	if type == "postgres" {
+        strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+    }
+
 	_, err := db.Exec(sql_table)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func CreateImageTablePG(db *sql.DB) {
-	// create table if it does not exist
-	sql_table := `
-	CREATE TABLE IF NOT EXISTS Image(
-		id SERIAL PRIMARY KEY,
-		registry_id INTEGER NOT NULL,
-		job_id INTEGER,
-		job_version_id INTEGER,
-		full_name TEXT,
-		short_name TEXT,
-		title TEXT,
-		maintainer TEXT,
-		email TEXT,
-		maint_org TEXT,
-		job_version TEXT,
-		package_version TEXT,
-		description TEXT,
-		registry TEXT,
-		org TEXT,
-		manifest TEXT,
-		CONSTRAINT fk_inv_registry_id
-		    FOREIGN KEY (registry_id)
-		    REFERENCES RegistryInfo (id)
-		    ON DELETE CASCADE,
-		CONSTRAINT fk_inv_job_id
-		    FOREIGN KEY (job_id)
-		    REFERENCES Job (id)
-		    ON DELETE SET NULL,
-		CONSTRAINT fk_inv_job_version_id
-		    FOREIGN KEY (job_version_id)
-		    REFERENCES JobVersion (id)
-		    ON DELETE SET NULL
-	);
-	`
-
-	_, err := db.Exec(sql_table)
-	if err != nil {
-		panic(err)
-	}
+func ResetImageTable(db *sql.DB, type string) error {
+    if type == "sqlite" {
+        return ResetImageTableLite(db)
+    } else if type == "postgres" {
+        return ResetImageTablePG(db)
+    } else {
+        panic("unsupported database type")
+    }
 }
 
 func ResetImageTableLite(db *sql.DB) error {

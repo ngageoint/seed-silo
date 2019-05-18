@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"log"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,7 +31,7 @@ type Exception struct {
 
 const AdminRole = "admin"
 
-func CreateUser(db *sql.DB) {
+func CreateUser(db *sql.DB, type string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS User(
@@ -40,6 +41,9 @@ func CreateUser(db *sql.DB) {
 		role TEXT
 	);
 	`
+	if type == "postgres" {
+	    strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	}
 
 	_, err := db.Exec(sql_table)
 	if err != nil {

@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"log"
+	"strings"
 )
 
 //TODO: find better way to store credentials for low side registries
@@ -22,7 +23,7 @@ type DisplayRegistry struct {
 	Org      string `db:"org"`
 }
 
-func CreateRegistryTable(db *sql.DB) {
+func CreateRegistryTable(db *sql.DB, type string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS RegistryInfo(
@@ -34,6 +35,10 @@ func CreateRegistryTable(db *sql.DB) {
 		password TEXT
 	);
 	`
+
+	if type == "postgres" {
+	    strings.replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	}
 
 	_, err := db.Exec(sql_table)
 	if err != nil {

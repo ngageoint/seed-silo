@@ -19,14 +19,14 @@ func InitSqliteDB(filepath string) *sql.DB {
 	if db == nil { panic("db nil") }
 	if err := db.Ping(); err != nil { panic(err) }
 
-	models.CreateImageTable(db)
-	models.CreateRegistryTable(db)
-	models.CreateUser(db)
-	models.CreateJobTable(db)
-	models.CreateJobVersionTable(db)
-
 	data = db
 	dbType = "sqlite"
+
+	models.CreateImageTable(db, dbType)
+	models.CreateRegistryTable(db, dbType)
+	models.CreateUser(db, dbType)
+	models.CreateJobTable(db, dbType)
+	models.CreateJobVersionTable(db, dbType)
 
 	return db
 }
@@ -38,14 +38,14 @@ func InitPostgresDB(url string) *sql.DB {
     if db == nil { panic("db nil") }
     if err := db.Ping(); err != nil { panic(err) }
 
-	models.CreateImageTable(db)
-	models.CreateRegistryTable(db)
-	models.CreateUser(db)
-	models.CreateJobTable(db)
-	models.CreateJobVersionTable(db)
-
 	data = db
 	dbType = "postgres"
+
+	models.CreateImageTable(db, dbType)
+	models.CreateRegistryTable(db, dbType)
+	models.CreateUser(db, dbType)
+	models.CreateJobTable(db, dbType)
+	models.CreateJobVersionTable(db, dbType)
 
 	return db
 }
