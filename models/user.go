@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
+	"fmt"
 )
 
 type SiloUser struct {
@@ -51,10 +52,11 @@ func CreateUser(db *sql.DB, dbType string) {
 	}
 
 	users, _ := GetUsers(db)
+	fmt.Println(len(users))
 	if len(users) == 0 {
 		//add default admin
 		var admin= SiloUser{Username: "admin", Password: "spicy-pickles17!", Role: AdminRole}
-		_, err = AddUser(db, admin)
+		_, err = AddUserPg(db, admin)
 
 		if err != nil {
 			panic(err)
@@ -72,6 +74,36 @@ func AddUser(db *sql.DB, r SiloUser) (int, error) {
 	`
 
 	stmt, err := db.Prepare(sql_addreg)
+	if err != nil {
+		return -1, err
+	}
+	defer stmt.Close()
+
+	hash, err := HashPassword(r.Password)
+
+	result, err := stmt.Exec(r.Username, hash, r.Role)
+
+	id := -1
+	var id64 int64
+	if err == nil {
+		id64, err = result.LastInsertId()
+		id = int(id64)
+	}
+
+	return id, err
+}
+
+func AddUserPg(db *sql.DB, r SiloUser) (int, error) {
+	sql_addreg := `
+	INSERT INTO SiloUser(
+		username,
+		password,
+	    role
+	) values($1, $2, $3)
+	`
+
+	stmt, err := db.Prepare(sql_addreg)
+	fmt.Println(stmt)
 	if err != nil {
 		return -1, err
 	}

@@ -27,7 +27,8 @@ func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
 	// db = database.InitSqliteDB("./silo-test.db")
-	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/scale?sslmode=disable")
+	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
+
 	router, err = route.NewRouter()
 	if err != nil {
 		os.Remove("./silo-test.db")
@@ -151,6 +152,14 @@ func clearTable() {
 	db.Exec("DELETE FROM sqlite_sequence")
 	db.Exec("DELETE FROM Job")
 	db.Exec("DELETE FROM JobVersion")
+}
+
+func clearTablePG() {
+	db.Exec("TRUNCATE RegistryInfo RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE Image RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE SiloUser RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE Job RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE JobVersion RESTART IDENTITY CASCADE")
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
