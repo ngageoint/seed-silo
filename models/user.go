@@ -56,7 +56,11 @@ func CreateUser(db *sql.DB, dbType string) {
 	if len(users) == 0 {
 		//add default admin
 		var admin= SiloUser{Username: "admin", Password: "spicy-pickles17!", Role: AdminRole}
-		_, err = AddUserPg(db, admin)
+		if dbType == "postgres" {
+			_, err = AddUserPg(db, admin)
+		} else {
+			_, err = AddUserLite(db, admin)
+		}
 
 		if err != nil {
 			panic(err)
@@ -64,7 +68,7 @@ func CreateUser(db *sql.DB, dbType string) {
 	}
 }
 
-func AddUser(db *sql.DB, r SiloUser) (int, error) {
+func AddUserLite(db *sql.DB, r SiloUser) (int, error) {
 	sql_addreg := `
 	INSERT INTO SiloUser(
 		username,
@@ -94,33 +98,15 @@ func AddUser(db *sql.DB, r SiloUser) (int, error) {
 }
 
 func AddUserPg(db *sql.DB, r SiloUser) (int, error) {
-	sql_addreg := `
-	INSERT INTO SiloUser(
-		username,
-		password,
-	    role
-	) values($1, $2, $3)
-	`
-
-	stmt, err := db.Prepare(sql_addreg)
-	fmt.Println(stmt)
-	if err != nil {
-		return -1, err
-	}
-	defer stmt.Close()
-
 	hash, err := HashPassword(r.Password)
+	query := `INSERT INTO SiloUser(username, password, role) 
+			VALUES($1, $2, $3) RETURNING id;`
 
-	result, err := stmt.Exec(r.Username, hash, r.Role)
 
-	id := -1
-	var id64 int64
-	if err == nil {
-		id64, err = result.LastInsertId()
-		id = int(id64)
-	}
+	var userid int
+	err = db.QueryRow(query, r.Username, hash, r.Role).Scan(&userid)
 
-	return id, err
+	return userid, err
 }
 
 func DeleteUser(db *sql.DB, id int) error {
@@ -159,7 +145,7 @@ func DisplayUsers(db *sql.DB) ([]DisplayUser, error) {
 }
 
 func GetUserById(db *sql.DB, id int) (DisplayUser, error) {
-	row := db.QueryRow("SELECT id, username, role FROM SiloUser WHERE id=?", id)
+	row := db.QueryRow("SELECT id, username, role FROM SiloUser WHERE id=$1", id)
 
 	var item DisplayUser
 	err := row.Scan(&item.ID, &item.Username, &item.Role)
@@ -168,7 +154,7 @@ func GetUserById(db *sql.DB, id int) (DisplayUser, error) {
 }
 
 func GetUserByName(db *sql.DB, username string) (DisplayUser, error) {
-	row := db.QueryRow("SELECT id, username, role FROM SiloUser WHERE username=?", username)
+	row := db.QueryRow("SELECT id, username, role FROM SiloUser WHERE username=$1", username)
 
 	var item DisplayUser
 	err := row.Scan(&item.ID, &item.Username, &item.Role)
@@ -206,7 +192,7 @@ func CheckPasswordHash(password, hash string) bool {
 }
 
 func ValidateUser(db *sql.DB, username, password string) (bool, error) {
-	row := db.QueryRow("SELECT * FROM SiloUser WHERE username=?", username)
+	row := db.QueryRow("SELECT * FROM SiloUser WHERE username=$1", username)
 
 	var item SiloUser
 	err := row.Scan(&item.ID, &item.Username, &item.Password, &item.Role)

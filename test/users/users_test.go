@@ -27,6 +27,7 @@ func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
 	// db = database.InitSqliteDB("./silo-test.db")
+	database.CreatePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo")
 	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
 
 	router, err = route.NewRouter()

@@ -181,7 +181,7 @@ func AddJob(db *sql.DB, job Job) (int, error) {
 		email,
 		maint_org,
 		description
-	) values(?, ?, ?, ?, ?, ?, ?, ?)
+	) values($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
 	stmt, err := db.Prepare(sql_add)

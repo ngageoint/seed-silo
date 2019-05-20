@@ -125,6 +125,7 @@ func User(w http.ResponseWriter, r *http.Request) {
 
 func AddUser(w http.ResponseWriter, r *http.Request) {
 	db := database.GetDB()
+	dbType := database.GetDbType()
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -140,8 +141,14 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := models.AddUser(db, user)
-	if err != nil {
+	var id int
+	var err2 error
+	if dbType == "postgres" {
+		id, err2 = models.AddUserPg(db, user)
+	} else {
+		id, err2 = models.AddUserLite(db, user)
+	}
+	if err2 != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
