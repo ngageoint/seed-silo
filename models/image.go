@@ -331,7 +331,7 @@ func ReadSimpleImages(db *sql.DB) []SimpleImage {
 }
 
 func ReadImage(db *sql.DB, id int) (Image, error) {
-	row := db.QueryRow("SELECT * FROM Image WHERE id=?", id)
+	row := db.QueryRow("SELECT * FROM Image WHERE id=$1", id)
 
 	var result Image
 	err := row.Scan(&result.ID, &result.RegistryId, &result.JobId, &result.JobVersionId,
@@ -370,7 +370,7 @@ func ImageExists(db *sql.DB, im Image) bool {
 }
 
 func GetJobImageIds(db *sql.DB, jobid int) []int {
-	sql_readall := `SELECT ID FROM Image WHERE job_id=?`
+	sql_readall := `SELECT ID FROM Image WHERE job_id=$1`
 
 	rows, err := db.Query(sql_readall, jobid)
 	if err != nil {
@@ -395,7 +395,7 @@ func GetJobImageIds(db *sql.DB, jobid int) []int {
 }
 
 func GetJobImages(db *sql.DB, jobid int) []SimpleImage {
-	sql_readall := `SELECT * FROM Image WHERE job_id=?`
+	sql_readall := `SELECT * FROM Image WHERE job_id=$1`
 
 	rows, err := db.Query(sql_readall, jobid)
 	if err != nil {
@@ -424,7 +424,7 @@ func GetJobImages(db *sql.DB, jobid int) []SimpleImage {
 }
 
 func GetJobVersionImageIds(db *sql.DB, jobversionid int) []int {
-	sql_readall := `SELECT ID FROM Image WHERE job_version_id=?`
+	sql_readall := `SELECT ID FROM Image WHERE job_version_id=$1`
 
 	rows, err := db.Query(sql_readall, jobversionid)
 	if err != nil {
@@ -449,7 +449,7 @@ func GetJobVersionImageIds(db *sql.DB, jobversionid int) []int {
 }
 
 func GetJobVersionImages(db *sql.DB, jobversionid int) []SimpleImage {
-	sql_readall := `SELECT * FROM Image WHERE job_version_id=?`
+	sql_readall := `SELECT * FROM Image WHERE job_version_id=$1`
 
 	rows, err := db.Query(sql_readall, jobversionid)
 	if err != nil {

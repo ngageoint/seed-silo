@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-common/util"
 	"github.com/ngageoint/seed-silo/database"
 	"github.com/ngageoint/seed-silo/route"
-	"strings"
 )
 
 var token = ""
@@ -26,9 +26,7 @@ var router *mux.Router
 func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
-	// db = database.InitSqliteDB("./silo-test.db")
-	database.CreatePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo")
-	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
+	db = database.InitSqliteDB("./silo-test.db")
 
 	router, err = route.NewRouter()
 	if err != nil {
@@ -50,10 +48,23 @@ func TestMain(m *testing.M) {
 
 	os.Remove("./silo-test.db")
 
+	// Run same tests with Postgres
+	database.CreatePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo")
+	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
+
+	token, err = login("admin", "spicy-pickles17!")
+	if err != nil {
+		os.Remove("./silo-test.db")
+		os.Exit(-1)
+	}
+
+	code += m.Run()
+
 	os.Exit(code)
 }
 
 func TestAddUser(t *testing.T) {
+	clearTablePG()
 	clearTable()
 
 	response := addUser(t)
@@ -81,6 +92,7 @@ func TestAddUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	clearTablePG()
 	clearTable()
 
 	addUser(t)
@@ -113,6 +125,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
+	clearTablePG()
 	clearTable()
 
 	addUser(t)

@@ -27,8 +27,7 @@ var router *mux.Router
 func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
-	// db = database.InitSqliteDB("./silo-test.db")
-	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
+	db = database.InitSqliteDB("./silo-test.db")
 	router, err = route.NewRouter()
 	if err != nil {
 		os.Remove("./silo-test.db")
@@ -49,11 +48,23 @@ func TestMain(m *testing.M) {
 
 	os.Remove("./silo-test.db")
 
+	// Run same tests with Postgres
+	database.CreatePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo")
+	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
+
+	token, err = login("admin", "spicy-pickles17!")
+	if err != nil {
+		os.Remove("./silo-test.db")
+		os.Exit(-1)
+	}
+
+	code += m.Run()
+
 	os.Exit(code)
 }
 
 func TestEmptyTable(t *testing.T) {
-	clearTable()
+	clearTablePG()
 
 	cases := []struct {
 		urlStr string
@@ -78,7 +89,7 @@ func TestEmptyTable(t *testing.T) {
 }
 
 func TestGetNonExistentItem(t *testing.T) {
-	clearTable()
+	clearTablePG()
 
 	cases := []struct {
 		urlStr   string
@@ -119,6 +130,7 @@ func TestGetNonExistentItem(t *testing.T) {
 }
 
 func TestAddRegistry(t *testing.T) {
+	clearTablePG()
 	clearTable()
 
 	payload := []byte(`{"name":"dockerhub", "url":"https://hub.docker.com", "org":"geointseed", "username":"", "password": ""}`)
@@ -152,7 +164,7 @@ func TestAddRegistry(t *testing.T) {
 }
 
 func TestDeleteRegistry(t *testing.T) {
-	clearTable()
+	clearTablePG()
 
 	addRegistry()
 
@@ -185,7 +197,7 @@ func TestDeleteRegistry(t *testing.T) {
 }
 
 func TestScanRegistry(t *testing.T) {
-	clearTable()
+	clearTablePG()
 
 	addRegistry()
 
@@ -223,7 +235,7 @@ func TestScanRegistry(t *testing.T) {
 }
 
 func TestListRegistries(t *testing.T) {
-	clearTable()
+	clearTablePG()
 
 	addRegistry()
 
@@ -246,6 +258,14 @@ func clearTable() {
 	db.Exec("DELETE FROM sqlite_sequence")
 	db.Exec("DELETE FROM Job")
 	db.Exec("DELETE FROM JobVersion")
+}
+
+func clearTablePG() {
+	db.Exec("TRUNCATE RegistryInfo RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE Image RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE SiloUser RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE Job RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE JobVersion RESTART IDENTITY CASCADE")
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {

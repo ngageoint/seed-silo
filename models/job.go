@@ -99,7 +99,7 @@ func ResetJobTablePG(db *sql.DB) error {
 	return err
 }
 
-func BuildJobsList(db *sql.DB, images *[]Image) []Job {
+func BuildJobsList(db *sql.DB, images *[]Image, dbType string) []Job {
 	jobs := []Job{}
 	jobMap := make(map[string]Job)
 	jobVersions := []JobVersion{}
@@ -128,9 +128,15 @@ func BuildJobsList(db *sql.DB, images *[]Image) []Job {
 			job = Job{}
 			SetJobInfo(&job, *img)
 
-			id, err := AddJob(db, job)
-			if err != nil {
-				util.PrintUtil("ERROR: Error adding job in BuildJobsList: %v\n", err)
+			var id int
+			var err2 error
+			if dbType == "postgres" {
+				id, err2 = AddJobPg(db, job)
+			} else {
+				id, err2 = AddJobLite(db, job)
+			}
+			if err2 != nil {
+				util.PrintUtil("ERROR: Error adding job in BuildJobsList: %v\n", err2)
 			}
 
 			job.ID = id
@@ -153,9 +159,15 @@ func BuildJobsList(db *sql.DB, images *[]Image) []Job {
 			jobVersion = JobVersion{}
 			SetJobVersionInfo(&jobVersion, *img)
 
-			id, err := AddJobVersion(db, jobVersion)
-			if err != nil {
-				util.PrintUtil("ERROR: Error adding job version in BuildJobsList: %v\n", err)
+			var id int
+			var err2 error
+			if dbType == "postgres" {
+				id, err2 = AddJobVersionPg(db, jobVersion)
+			} else {
+				id, err2 = AddJobVersionLite(db, jobVersion)
+			}
+			if err2 != nil {
+				util.PrintUtil("ERROR: Error adding job version in BuildJobsList: %v\n", err2)
 			}
 
 			jobVersion.ID = id
@@ -170,7 +182,7 @@ func BuildJobsList(db *sql.DB, images *[]Image) []Job {
 	return jobs
 }
 
-func AddJob(db *sql.DB, job Job) (int, error) {
+func AddJobLite(db *sql.DB, job Job) (int, error) {
 	sql_add := `
 	INSERT INTO Job(
 		name,
@@ -202,6 +214,27 @@ func AddJob(db *sql.DB, job Job) (int, error) {
 		id64, err = result.LastInsertId()
 		id = int(id64)
 	}
+
+	return id, err
+}
+
+func AddJobPg(db *sql.DB, job Job) (int, error) {
+	query :=
+	`INSERT INTO Job(
+			name, 
+			latest_job_version,
+			latest_package_version,
+			title,
+			maintainer,
+			email,
+			maint_org,
+			description) 
+		VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`
+
+
+	var id int
+	err := db.QueryRow(query, job.Name, job.LatestJobVersion, job.LatestPackageVersion,
+		job.Title, job.Maintainer, job.Email, job.MaintOrg, job.Description).Scan(&id)
 
 	return id, err
 }
@@ -291,7 +324,7 @@ func ReadJobs(db *sql.DB) []Job {
 }
 
 func ReadJob(db *sql.DB, id int) (Job, error) {
-	row := db.QueryRow("SELECT * FROM Job WHERE id=?", id)
+	row := db.QueryRow("SELECT * FROM Job WHERE id=$1", id)
 
 	var result Job
 	err := row.Scan(&result.ID, &result.Name, &result.LatestJobVersion, &result.LatestPackageVersion,
@@ -387,7 +420,7 @@ func ResetJobVersionTablePG(db *sql.DB) error {
 	return err
 }
 
-func AddJobVersion(db *sql.DB, jv JobVersion) (int, error) {
+func AddJobVersionLite(db *sql.DB, jv JobVersion) (int, error) {
 	sql_add := `
 	INSERT INTO JobVersion(
 		job_name,
@@ -414,6 +447,23 @@ func AddJobVersion(db *sql.DB, jv JobVersion) (int, error) {
 		id64, err = result.LastInsertId()
 		id = int(id64)
 	}
+
+	return id, err
+}
+
+func AddJobVersionPg(db *sql.DB, jv JobVersion) (int, error) {
+	query :=
+		`INSERT INTO JobVersion(
+			job_name,
+			job_id,
+			job_version,
+			latest_package_version
+		)	VALUES($1, $2, $3, $4) RETURNING id;`
+
+
+	var id int
+	err := db.QueryRow(query, jv.JobName, jv.JobId, jv.JobVersion,
+		jv.LatestPackageVersion).Scan(&id)
 
 	return id, err
 }
@@ -469,7 +519,7 @@ func ReadJobVersions(db *sql.DB) []JobVersion {
 }
 
 func ReadJobVersion(db *sql.DB, id int) (JobVersion, error) {
-	row := db.QueryRow("SELECT * FROM JobVersion WHERE id=?", id)
+	row := db.QueryRow("SELECT * FROM JobVersion WHERE id=$1", id)
 
 	var result JobVersion
 	err := row.Scan(&result.ID, &result.JobName, &result.JobId, &result.JobVersion, &result.LatestPackageVersion)
@@ -483,7 +533,7 @@ func ReadJobVersion(db *sql.DB, id int) (JobVersion, error) {
 }
 
 func GetJobVersions(db *sql.DB, jobid int) []JobVersion {
-	sql_readall := `SELECT * FROM JobVersion WHERE job_id=?`
+	sql_readall := `SELECT * FROM JobVersion WHERE job_id=$1`
 
 	rows, err := db.Query(sql_readall, jobid)
 	if err != nil {

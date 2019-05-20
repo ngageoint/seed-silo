@@ -72,6 +72,7 @@ func Registry(w http.ResponseWriter, r *http.Request) {
 
 func AddRegistry(w http.ResponseWriter, r *http.Request) {
 	db := database.GetDB()
+	dbType := database.GetDbType()
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -95,8 +96,14 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 		log.Print(humanError)
 		log.Print(err)
 	} else {
-		id, err := models.AddRegistry(db, reginfo)
-		if err != nil {
+		var id int
+		var err2 error
+		if dbType == "postgres" {
+			id, err2 = models.AddRegistryPg(db, reginfo)
+		} else {
+			id, err2 = models.AddRegistryLite(db, reginfo)
+		}
+		if err2 != nil {
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
 		reginfo.ID = id
@@ -187,7 +194,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	models.BuildJobsList(db, &allImages)
+	models.BuildJobsList(db, &allImages, dbType)
 	models.StoreOrUpdateImages(db, allImages)
 }
 
@@ -239,7 +246,7 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	models.BuildJobsList(db, &dbImages)
+	models.BuildJobsList(db, &dbImages, dbType)
 	models.StoreImages(db, dbImages)
 }
 
