@@ -241,14 +241,38 @@ func AddJobPg(db *sql.DB, job Job) (int, error) {
 
 func UpdateJob(db *sql.DB, job Job) error {
 	sql_update := `UPDATE Job SET 
-		latest_job_version=?, 
-		latest_package_version=?,		
-		title=?,
-		maintainer=?,
-		email=?,
-		maint_org=?,
-		description=?
-		where id=?`
+		latest_job_version=$1, 
+		latest_package_version=$2,		
+		title=$3,
+		maintainer=$4,
+		email=$5,
+		maint_org=$6,
+		description=$7
+		where id=$8`
+
+
+	stmt, err := db.Prepare(sql_update)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(job.LatestJobVersion, job.LatestPackageVersion,
+		job.Title, job.Maintainer, job.Email, job.MaintOrg, job.Description, job.ID)
+
+	return err
+}
+
+func UpdateJobPg(db *sql.DB, job Job) error {
+	sql_update := `UPDATE Job SET 
+		latest_job_version=$1, 
+		latest_package_version=$2,		
+		title=$3,
+		maintainer=$4,
+		email=$5,
+		maint_org=$6,
+		description=$7
+		where id=$8`
 
 	stmt, err := db.Prepare(sql_update)
 	if err != nil {

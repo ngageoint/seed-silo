@@ -65,6 +65,7 @@ func TestMain(m *testing.M) {
 
 func TestEmptyTable(t *testing.T) {
 	clearTablePG()
+	clearTable()
 
 	cases := []struct {
 		urlStr string
@@ -90,6 +91,7 @@ func TestEmptyTable(t *testing.T) {
 
 func TestGetNonExistentItem(t *testing.T) {
 	clearTablePG()
+	clearTable()
 
 	cases := []struct {
 		urlStr   string
@@ -165,6 +167,7 @@ func TestAddRegistry(t *testing.T) {
 
 func TestDeleteRegistry(t *testing.T) {
 	clearTablePG()
+	clearTable()
 
 	addRegistry()
 
@@ -198,6 +201,7 @@ func TestDeleteRegistry(t *testing.T) {
 
 func TestScanRegistry(t *testing.T) {
 	clearTablePG()
+	clearTable()
 
 	addRegistry()
 
@@ -236,6 +240,7 @@ func TestScanRegistry(t *testing.T) {
 
 func TestListRegistries(t *testing.T) {
 	clearTablePG()
+	clearTable()
 
 	addRegistry()
 

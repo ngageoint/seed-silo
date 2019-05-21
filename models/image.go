@@ -151,7 +151,17 @@ func ResetImageTablePG(db *sql.DB) error {
 	return err
 }
 
-func StoreImages(db *sql.DB, images []Image) {
+func StoreImages(db *sql.DB, images []Image, dbType string) {
+	if dbType == "sqlite" {
+		StoreImagesLite(db, images)
+	} else if dbType == "postgres" {
+		StoreImagesPg(db, images)
+	} else {
+		panic("unsupported database type")
+	}
+}
+
+func StoreImagesLite(db *sql.DB, images []Image) {
 	sql_addimg := `
 	INSERT INTO Image(
 	    registry_id,
@@ -189,7 +199,50 @@ func StoreImages(db *sql.DB, images []Image) {
 	}
 }
 
-func StoreOrUpdateImages(db *sql.DB, images []Image) {
+func StoreImagesPg(db *sql.DB, images []Image) {
+	query := `
+	INSERT INTO Image(
+	    registry_id,
+	    job_id,
+	    job_version_id,
+	    full_name,
+		short_name,
+		title,
+		maintainer,
+		email,
+		maint_org,
+		job_version,
+		package_version,
+		description,
+		registry,
+		org,
+		manifest
+	) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
+	`
+
+	for _, img := range images {
+		_, err := db.Exec(query, img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
+			img.ShortName, img.Title, img.Maintainer, img.Email, img.MaintOrg,
+			img.JobVersion, img.PackageVersion, img.Description, img.Registry,
+			img.Org, img.Manifest)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func StoreOrUpdateImages(db *sql.DB, images []Image, dbType string) {
+	if dbType == "sqlite" {
+		StoreOrUpdateImagesLite(db, images)
+	} else if dbType == "postgres" {
+		StoreOrUpdateImagesPg(db, images)
+	} else {
+		panic("unsupported database type")
+	}
+}
+
+func StoreOrUpdateImagesLite(db *sql.DB, images []Image) {
 	sql_add_img := `
 	INSERT INTO Image(
 	    registry_id,
@@ -256,6 +309,82 @@ func StoreOrUpdateImages(db *sql.DB, images []Image) {
 				img.PackageVersion, img.Description, img.Registry, img.Org, img.Manifest)
 			if err2 != nil {
 				panic(err2)
+			}
+		}
+	}
+}
+
+func StoreOrUpdateImagesPg(db *sql.DB, images []Image) {
+	sql_add_img := `
+	INSERT INTO Image(
+	    registry_id,
+	    job_id,
+	    job_version_id,
+	    full_name,
+		short_name,
+		title,
+		maintainer,
+		email,
+		maint_org,
+		job_version,
+		package_version,
+		description,
+		registry,
+		org,
+		manifest
+	) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
+	`
+
+	addStatement, err := db.Prepare(sql_add_img)
+	if err != nil {
+		panic(err)
+	}
+	defer addStatement.Close()
+
+	sql_update_img := `
+	UPDATE Image SET
+	    registry_id=$1,
+	    job_id=$2,
+	    job_version_id=$3,
+	    full_name=$4,
+		short_name=$5,
+		title=$6,
+		maintainer=$7,
+		email=$8,
+		maint_org=$9,
+		job_version=$10,
+		package_version=$11,
+		description=$12,
+		registry=$13,
+		org=$14,
+		manifest=$15
+	WHERE id=$16
+	`
+
+	updateStatement, err := db.Prepare(sql_update_img)
+	if err != nil {
+		panic(err)
+	}
+	defer updateStatement.Close()
+
+	for _, img := range images {
+		if img.ID != 0 {
+			_, err := db.Exec(sql_update_img, img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
+				img.ShortName, img.Title, img.Maintainer, img.Email, img.MaintOrg,
+				img.JobVersion, img.PackageVersion, img.Description, img.Registry,
+				img.Org, img.Manifest, img.ID)
+
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			_, err := db.Exec(sql_add_img, img.RegistryId, img.JobId, img.JobVersionId, img.FullName,
+				img.ShortName, img.Title, img.Maintainer, img.Email, img.MaintOrg,
+				img.JobVersion, img.PackageVersion, img.Description, img.Registry,
+				img.Org, img.Manifest)
+
+			if err != nil {
+				panic(err)
 			}
 		}
 	}
