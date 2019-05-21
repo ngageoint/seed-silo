@@ -32,7 +32,7 @@ type Exception struct {
 
 const AdminRole = "admin"
 
-func CreateUser(db *sql.DB, dbType string) {
+func CreateUser(db *sql.DB, dbType, admin, password string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS SiloUser(
@@ -55,7 +55,7 @@ func CreateUser(db *sql.DB, dbType string) {
 	fmt.Println(len(users))
 	if len(users) == 0 {
 		//add default admin
-		var admin= SiloUser{Username: "admin", Password: "spicy-pickles17!", Role: AdminRole}
+		var admin= SiloUser{Username: admin, Password: password, Role: AdminRole}
 		if dbType == "postgres" {
 			_, err = AddUserPg(db, admin)
 		} else {

@@ -21,9 +21,11 @@ func getEnv(key, fallback string) string {
 
 func main() {
     url := os.Getenv("DATABASE_URL")
+    admin := getEnv("SILO_ADMIN", "admin")
+    password := getEnv( "SILO_ADMIN_PASSWORD", "spicy-pickles17!")
     if url == ""{
     	lite := getEnv("SILO_LITE_PATH", "/usr/silo/seed-silo.db")
-        db := database.InitSqliteDB(lite)
+        db := database.InitSqliteDB(lite, admin, password)
         defer db.Close()
 	} else {
 		reset_url := os.Getenv("RESET_URL")
@@ -31,7 +33,7 @@ func main() {
 		if reset_url != "" {
 			database.CreatePostgresDB(reset_url, reset_name)
 		}
-        db := database.InitPostgresDB(url)
+        db := database.InitPostgresDB(url, admin, password)
         defer db.Close()
 	}
 

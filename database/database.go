@@ -17,7 +17,7 @@ func CreateSqliteDB(filepath string) {
 	os.Remove(filepath)
 }
 
-func InitSqliteDB(filepath string) *sql.DB {
+func InitSqliteDB(filepath, admin, password string) *sql.DB {
 	db, err := sql.Open("sqlite3", filepath)
 	db.Exec("PRAGMA foreign_keys = ON;")
 	if err != nil { panic(err) }
@@ -29,7 +29,7 @@ func InitSqliteDB(filepath string) *sql.DB {
 
 	models.CreateImageTable(db, dbType)
 	models.CreateRegistryTable(db, dbType)
-	models.CreateUser(db, dbType)
+	models.CreateUser(db, dbType, admin, password)
 	models.CreateJobTable(db, dbType)
 	models.CreateJobVersionTable(db, dbType)
 
@@ -57,7 +57,7 @@ func RemovePostgresDB(url, name string) {
 	db.Exec("DROP DATABASE IF EXISTS " + name)
 }
 
-func InitPostgresDB(url string) *sql.DB {
+func InitPostgresDB(url, admin, password string) *sql.DB {
     connection, _ := pq.ParseURL(url)
     db, err := sql.Open("postgres", connection)
     if err != nil { panic(err) }
@@ -71,7 +71,7 @@ func InitPostgresDB(url string) *sql.DB {
 	models.CreateJobTable(db, dbType)
 	models.CreateJobVersionTable(db, dbType)
 	models.CreateImageTable(db, dbType)
-	models.CreateUser(db, dbType)
+	models.CreateUser(db, dbType, admin, password)
 
 	return db
 }
