@@ -12,10 +12,18 @@ import (
 	"github.com/ngageoint/seed-silo/route"
 )
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func main() {
     url := os.Getenv("DATABASE_URL")
     if url == ""{
-        db := database.InitSqliteDB("/usr/silo/seed-silo.db")
+    	lite := getEnv("SILO_LITE_PATH", "/usr/silo/seed-silo.db")
+        db := database.InitSqliteDB(lite)
         defer db.Close()
 	} else {
 		reset_url := os.Getenv("RESET_URL")
