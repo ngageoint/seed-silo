@@ -18,6 +18,11 @@ func main() {
         db := database.InitSqliteDB("/usr/silo/seed-silo.db")
         defer db.Close()
 	} else {
+		reset_url := os.Getenv("RESET_URL")
+		reset_name := os.Getenv("RESET_NAME")
+		if reset_url != "" {
+			database.CreatePostgresDB(reset_url, reset_name)
+		}
         db := database.InitPostgresDB(url)
         defer db.Close()
 	}
