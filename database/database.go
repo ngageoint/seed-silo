@@ -47,6 +47,16 @@ func CreatePostgresDB(url, name string) {
 	db.Exec("CREATE DATABASE " + name)
 }
 
+func RemovePostgresDB(url, name string) {
+	connection, _ := pq.ParseURL(url)
+	db, err := sql.Open("postgres", connection)
+	if err != nil { panic(err) }
+	if db == nil { panic("db nil") }
+	if err := db.Ping(); err != nil { panic(err) }
+
+	db.Exec("DROP DATABASE IF EXISTS " + name)
+}
+
 func InitPostgresDB(url string) *sql.DB {
     connection, _ := pq.ParseURL(url)
     db, err := sql.Open("postgres", connection)

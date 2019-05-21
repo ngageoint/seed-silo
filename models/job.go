@@ -494,11 +494,11 @@ func AddJobVersionPg(db *sql.DB, jv JobVersion) (int, error) {
 
 func UpdateJobVersion(db *sql.DB, jv JobVersion) error {
 	sql_update := `UPDATE JobVersion SET 
-		job_name=?,
-		job_id=?,
-		job_version=?,
-		latest_package_version=?
-		where id=?`
+		job_name=$1,
+		job_id=$2,
+		job_version=$3,
+		latest_package_version=$4
+		where id=$5`
 
 	stmt, err := db.Prepare(sql_update)
 	if err != nil {
@@ -506,7 +506,7 @@ func UpdateJobVersion(db *sql.DB, jv JobVersion) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(jv.JobName, jv.JobId, jv.JobVersion, jv.LatestPackageVersion)
+	_, err = stmt.Exec(jv.JobName, jv.JobId, jv.JobVersion, jv.LatestPackageVersion, jv.ID)
 
 	return err
 }

@@ -67,9 +67,18 @@ func TestMain(m *testing.M) {
 
 	token, err = login("admin", "spicy-pickles17!")
 	if err != nil {
-		os.Remove("./silo-test.db")
+		database.RemovePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo")
 		os.Exit(-1)
 	}
+
+	if get_images() == false {
+		database.RemovePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo")
+		os.Exit(-1)
+	}
+
+	JobID = findTestJobID()
+	JVID = findTestJobVersionID()
+	imageID = findTestImageID()
 
 	code += m.Run()
 
