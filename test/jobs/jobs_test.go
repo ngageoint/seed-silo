@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -28,10 +29,17 @@ var JVID int
 var imageID int
 var imageIDs []int
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
-	db = database.InitSqliteDB("./silo-test.db")
+	db = database.InitSqliteDB("./silo-test.db", "admin", "spicy-pickles17!")
 	router, err = route.NewRouter()
 	if err != nil {
 		os.Remove("./silo-test.db")
@@ -62,17 +70,20 @@ func TestMain(m *testing.M) {
 	os.Remove("./silo-test.db")
 
 	// Run same tests with Postgres
-	database.CreatePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo_job")
-	db = database.InitPostgresDB("postgres://scale:scale@localhost:55432/test_silo_job?sslmode=disable")
+	url := getEnv("DATABASE_URL", "postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
+	base := strings.Replace(url, "test_silo", "", 1)
+	full := strings.Replace(url, "test_silo", "test_silo_job", 1)
+	database.CreatePostgresDB( base, "test_silo_job")
+	db = database.InitPostgresDB(full, "admin", "spicy-pickles17!")
 
 	token, err = login("admin", "spicy-pickles17!")
 	if err != nil {
-		database.RemovePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo_job")
+		database.RemovePostgresDB(base, "test_silo_job")
 		os.Exit(-1)
 	}
 
 	if get_images() == false {
-		database.RemovePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo_job")
+		database.RemovePostgresDB(base, "test_silo_job")
 		os.Exit(-1)
 	}
 
@@ -82,7 +93,7 @@ func TestMain(m *testing.M) {
 
 	code += m.Run()
 
-	database.RemovePostgresDB("postgres://scale:scale@localhost:55432/?sslmode=disable", "test_silo_job")
+	database.RemovePostgresDB(base, "test_silo_job")
 
 	os.Exit(code)
 }
