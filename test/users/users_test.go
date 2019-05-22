@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-common/util"
@@ -59,6 +60,9 @@ func TestMain(m *testing.M) {
 	url := getEnv("DATABASE_URL", "postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
 	base := strings.Replace(url, "test_silo", "", 1)
 	full := strings.Replace(url, "test_silo", "test_silo", 1)
+	fmt.Println(url)
+	fmt.Println(base)
+	fmt.Println(full)
 	database.CreatePostgresDB(base, "test_silo")
 	db = database.InitPostgresDB(full, "admin", "spicy-pickles17!")
 
