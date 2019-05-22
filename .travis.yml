@@ -5,11 +5,20 @@ language: go
 services:
   - docker
 
+matrix:
+  include:
+    - os: linux
+      addons:
+        postgresql: "9.5"
+        apt:
+          packages:
+            - postgresql-9.5-postgis-2.3
+
 install:
   - go get github.com/ngageoint/seed-common/...
 
 env:
-   - DATABASE_URL="postgis://postgres:@localhost:5432/test_silo?sslmode=disable"
+   - DATABASE_URL=postgis://postgres:@localhost:5432/test_silo?sslmode=disable
 
 script:
    - ./build-silo.sh
