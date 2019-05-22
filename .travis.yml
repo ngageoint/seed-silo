@@ -4,15 +4,7 @@ language: go
 
 services:
   - docker
-
-matrix:
-  include:
-    - os: linux
-      addons:
-        postgresql: "9.5"
-        apt:
-          packages:
-            - postgresql-9.5-postgis-2.3
+  - postgresql
 
 install:
   - go get github.com/ngageoint/seed-common/...
