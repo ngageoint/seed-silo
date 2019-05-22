@@ -9,7 +9,7 @@ install:
   - go get github.com/ngageoint/seed-common/...
 
 env:
-   - DATABASE_URL=postgis://postgres:@localhost:5432/test_silo?sslmode=disable
+   - DATABASE_URL="postgis://postgres:@localhost:5432/test_silo?sslmode=disable"
 
 script:
    - ./build-silo.sh
