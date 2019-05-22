@@ -59,13 +59,13 @@ func TestMain(m *testing.M) {
 	// Run same tests with Postgres
 	url := getEnv("DATABASE_URL", "postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
 	base := strings.Replace(url, "test_silo", "", 1)
-	full := strings.Replace(url, "test_silo", "test_silo", 1)
-	database.CreatePostgresDB(base, "test_silo")
+	full := strings.Replace(url, "test_silo", "test_silo_reg", 1)
+	database.CreatePostgresDB(base, "test_silo_reg")
 	db = database.InitPostgresDB(full, "admin", "spicy-pickles17!")
 
 	token, err = login("admin", "spicy-pickles17!")
 	if err != nil {
-		database.RemovePostgresDB(base, "test_silo")
+		database.RemovePostgresDB(base, "test_silo_reg")
 		os.Exit(-1)
 	}
 
