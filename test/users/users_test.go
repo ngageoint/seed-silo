@@ -60,9 +60,6 @@ func TestMain(m *testing.M) {
 	url := getEnv("DATABASE_URL", "postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
 	base := strings.Replace(url, "test_silo", "", 1)
 	full := strings.Replace(url, "test_silo", "test_silo_user", 1)
-	fmt.Println(url)
-	fmt.Println(base)
-	fmt.Println(full)
 	database.CreatePostgresDB(base, "test_silo_user")
 	db = database.InitPostgresDB(full, "admin", "spicy-pickles17!")
 

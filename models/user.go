@@ -52,7 +52,6 @@ func CreateUser(db *sql.DB, dbType, admin, password string) {
 	}
 
 	users, _ := GetUsers(db)
-	fmt.Println(len(users))
 	if len(users) == 0 {
 		//add default admin
 		var admin= SiloUser{Username: admin, Password: password, Role: AdminRole}
