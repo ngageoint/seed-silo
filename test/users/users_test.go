@@ -10,23 +10,31 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-common/util"
 	"github.com/ngageoint/seed-silo/database"
 	"github.com/ngageoint/seed-silo/route"
-	"strings"
 )
 
 var token = ""
 var db *sql.DB
 var router *mux.Router
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
-	db = database.InitDB("./silo-test.db")
+	db = database.InitSqliteDB("./silo-test.db", "admin", "spicy-pickles17!")
+
 	router, err = route.NewRouter()
 	if err != nil {
 		os.Remove("./silo-test.db")
@@ -47,10 +55,26 @@ func TestMain(m *testing.M) {
 
 	os.Remove("./silo-test.db")
 
+	// Run same tests with Postgres
+	url := getEnv("DATABASE_URL", "postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
+	base := strings.Replace(url, "test_silo", "", 1)
+	full := strings.Replace(url, "test_silo", "test_silo_user", 1)
+	database.CreatePostgresDB(base, "test_silo_user")
+	db = database.InitPostgresDB(full, "admin", "spicy-pickles17!")
+
+	token, err = login("admin", "spicy-pickles17!")
+	if err != nil {
+		database.RemovePostgresDB(base, "test_silo_user")
+		os.Exit(-1)
+	}
+
+	code += m.Run()
+
 	os.Exit(code)
 }
 
 func TestAddUser(t *testing.T) {
+	clearTablePG()
 	clearTable()
 
 	response := addUser(t)
@@ -78,6 +102,7 @@ func TestAddUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	clearTablePG()
 	clearTable()
 
 	addUser(t)
@@ -110,6 +135,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
+	clearTablePG()
 	clearTable()
 
 	addUser(t)
@@ -146,10 +172,18 @@ func TestLogin(t *testing.T) {
 func clearTable() {
 	db.Exec("DELETE FROM RegistryInfo")
 	db.Exec("DELETE FROM Image")
-	db.Exec("DELETE FROM User")
+	db.Exec("DELETE FROM SiloUser")
 	db.Exec("DELETE FROM sqlite_sequence")
 	db.Exec("DELETE FROM Job")
 	db.Exec("DELETE FROM JobVersion")
+}
+
+func clearTablePG() {
+	db.Exec("TRUNCATE RegistryInfo RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE Image RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE SiloUser RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE Job RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE JobVersion RESTART IDENTITY CASCADE")
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {

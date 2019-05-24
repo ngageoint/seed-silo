@@ -12,11 +12,33 @@ import (
 	"github.com/ngageoint/seed-silo/route"
 )
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func main() {
-	db := database.InitDB("/usr/silo/seed-silo.db")
+    url := os.Getenv("DATABASE_URL")
+    admin := getEnv("SILO_ADMIN", "admin")
+    password := getEnv( "SILO_ADMIN_PASSWORD", "spicy-pickles17!")
+    if url == ""{
+    	lite := getEnv("SILO_LITE_PATH", "/usr/silo/seed-silo.db")
+        db := database.InitSqliteDB(lite, admin, password)
+        defer db.Close()
+	} else {
+		reset_url := os.Getenv("RESET_URL")
+		reset_name := os.Getenv("RESET_NAME")
+		if reset_url != "" {
+			database.CreatePostgresDB(reset_url, reset_name)
+		}
+        db := database.InitPostgresDB(url, admin, password)
+        defer db.Close()
+	}
+
 	router, err := route.NewRouter()
 	util.InitPrinter(util.PrintLog)
-	defer db.Close()
 
 	if err != nil {
 		log.Fatalf("Error initializing router: %v\n", err.Error())

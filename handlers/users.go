@@ -34,7 +34,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
+	var user models.SiloUser
 	if err := json.Unmarshal(body, &user); err != nil {
 		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
 		return
@@ -81,7 +81,7 @@ func Validate(roles []string, next http.HandlerFunc) http.HandlerFunc {
 				}
 				if token.Valid {
 					context.Set(req, "decoded", token.Claims)
-					var user models.User
+					var user models.SiloUser
 					mapstructure.Decode(token.Claims, &user)
 					if util.ContainsString(roles, user.Role) {
 						next(w, req)
@@ -125,6 +125,7 @@ func User(w http.ResponseWriter, r *http.Request) {
 
 func AddUser(w http.ResponseWriter, r *http.Request) {
 	db := database.GetDB()
+	dbType := database.GetDbType()
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -134,14 +135,20 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var user models.User
+	var user models.SiloUser
 	if err := json.Unmarshal(body, &user); err != nil {
 		respondWithError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 
-	id, err := models.AddUser(db, user)
-	if err != nil {
+	var id int
+	var err2 error
+	if dbType == "postgres" {
+		id, err2 = models.AddUserPg(db, user)
+	} else {
+		id, err2 = models.AddUserLite(db, user)
+	}
+	if err2 != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

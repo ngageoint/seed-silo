@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -28,10 +29,17 @@ var JVID int
 var imageID int
 var imageIDs []int
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func TestMain(m *testing.M) {
 	var err error
 	os.Remove("./silo-test.db")
-	db = database.InitDB("./silo-test.db")
+	db = database.InitSqliteDB("./silo-test.db", "admin", "spicy-pickles17!")
 	router, err = route.NewRouter()
 	if err != nil {
 		os.Remove("./silo-test.db")
@@ -60,6 +68,32 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	os.Remove("./silo-test.db")
+
+	// Run same tests with Postgres
+	url := getEnv("DATABASE_URL", "postgres://scale:scale@localhost:55432/test_silo?sslmode=disable")
+	base := strings.Replace(url, "test_silo", "", 1)
+	full := strings.Replace(url, "test_silo", "test_silo_job", 1)
+	database.CreatePostgresDB( base, "test_silo_job")
+	db = database.InitPostgresDB(full, "admin", "spicy-pickles17!")
+
+	token, err = login("admin", "spicy-pickles17!")
+	if err != nil {
+		database.RemovePostgresDB(base, "test_silo_job")
+		os.Exit(-1)
+	}
+
+	if get_images() == false {
+		database.RemovePostgresDB(base, "test_silo_job")
+		os.Exit(-1)
+	}
+
+	JobID = findTestJobID()
+	JVID = findTestJobVersionID()
+	imageID = findTestImageID()
+
+	code += m.Run()
+
+	database.RemovePostgresDB(base, "test_silo_job")
 
 	os.Exit(code)
 }
@@ -234,6 +268,7 @@ func TestListJobVersions(t *testing.T) {
 }
 
 func get_images() bool {
+	clearTablePG()
 	clearTable()
 
 	addRegistry()
@@ -252,6 +287,14 @@ func clearTable() {
 	db.Exec("DELETE FROM sqlite_sequence")
 	db.Exec("DELETE FROM Job")
 	db.Exec("DELETE FROM JobVersion")
+}
+
+func clearTablePG() {
+	db.Exec("TRUNCATE RegistryInfo RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE Image RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE SiloUser RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE Job RESTART IDENTITY CASCADE")
+	db.Exec("TRUNCATE JobVersion RESTART IDENTITY CASCADE")
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {

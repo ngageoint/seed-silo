@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"log"
+	"strings"
 )
 
 //TODO: find better way to store credentials for low side registries
@@ -22,7 +23,7 @@ type DisplayRegistry struct {
 	Org      string `db:"org"`
 }
 
-func CreateRegistryTable(db *sql.DB) {
+func CreateRegistryTable(db *sql.DB, dbType string) {
 	// create table if it does not exist
 	sql_table := `
 	CREATE TABLE IF NOT EXISTS RegistryInfo(
@@ -35,13 +36,17 @@ func CreateRegistryTable(db *sql.DB) {
 	);
 	`
 
+	if dbType == "postgres" {
+	    sql_table = strings.Replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+	}
+
 	_, err := db.Exec(sql_table)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func AddRegistry(db *sql.DB, r RegistryInfo) (int, error) {
+func AddRegistryLite(db *sql.DB, r RegistryInfo) (int, error) {
 	sql_addreg := `
 	INSERT INTO RegistryInfo(
 		name,
@@ -66,6 +71,17 @@ func AddRegistry(db *sql.DB, r RegistryInfo) (int, error) {
 		id64, err = result.LastInsertId()
 		id = int(id64)
 	}
+
+	return id, err
+}
+
+func AddRegistryPg(db *sql.DB, r RegistryInfo) (int, error) {
+	query := `INSERT INTO RegistryInfo(name, url, org, username, password) 
+			VALUES($1, $2, $3, $4, $5) RETURNING id;`
+
+
+	var id int
+	err := db.QueryRow(query, r.Name, r.Url, r.Org, r.Username, r.Password).Scan(&id)
 
 	return id, err
 }
@@ -106,7 +122,7 @@ func DisplayRegistries(db *sql.DB) ([]DisplayRegistry, error) {
 }
 
 func GetRegistry(db *sql.DB, id int) (RegistryInfo, error) {
-	row := db.QueryRow("SELECT * FROM RegistryInfo WHERE id=?", id)
+	row := db.QueryRow("SELECT * FROM RegistryInfo WHERE id=$1", id)
 
 	var result RegistryInfo
 	err := row.Scan(&result.ID, &result.Name, &result.Url, &result.Org, &result.Username, &result.Password)
