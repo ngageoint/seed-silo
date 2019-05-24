@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
-	"fmt"
 )
 
 type SiloUser struct {

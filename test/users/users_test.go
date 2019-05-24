@@ -12,7 +12,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-common/util"

@@ -2,11 +2,11 @@ package database
 
 import (
 	"database/sql"
+	"os"
 
 	"github.com/ngageoint/seed-silo/models"
 	_ "github.com/mattn/go-sqlite3"
-    "github.com/lib/pq"
-	"os"
+	"github.com/lib/pq"
 )
 
 var data *sql.DB
