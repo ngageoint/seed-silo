@@ -59,7 +59,10 @@ func RemovePostgresDB(url, name string) {
 
 func InitPostgresDB(url, admin, password string) *sql.DB {
     connection, _ := pq.ParseURL(url)
+    connection = connection + " search_path=silo"
     db, err := sql.Open("postgres", connection)
+    db.Exec("CREATE SCHEMA silo")
+
     if err != nil { panic(err) }
     if db == nil { panic("db nil") }
     if err := db.Ping(); err != nil { panic(err) }
