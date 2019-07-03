@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 		os.Exit(-1)
 	}
 
-	util.InitPrinter(util.PrintErr)
+	util.InitPrinter(util.Quiet, nil, nil)
 	log.SetFlags(0)
 	log.SetOutput(ioutil.Discard)
 

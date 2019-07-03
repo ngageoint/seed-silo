@@ -38,7 +38,7 @@ func main() {
 	}
 
 	router, err := route.NewRouter()
-	util.InitPrinter(util.PrintLog)
+	util.InitPrinter(util.PrintLog, nil, nil)
 
 	if err != nil {
 		log.Fatalf("Error initializing router: %v\n", err.Error())
