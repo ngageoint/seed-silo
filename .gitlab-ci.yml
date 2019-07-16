@@ -21,7 +21,6 @@ silo-build:
   artifacts:
     untracked: true
   script:
-    - go get github.com/ngageoint/seed-common/...
     - mkdir -p $GOPATH/src/github.com/ngageoint
     - ln -s $(pwd) $GOPATH/src/github.com/ngageoint/seed-silo
     - cd $GOPATH/src/github.com/ngageoint/seed-silo
