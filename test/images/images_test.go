@@ -140,6 +140,26 @@ func TestImageManifest(t *testing.T) {
 	}
 }
 
+func TestJITImageManifest(t *testing.T) {
+	payload := []byte(``)
+	url := "/images/manifest/docker.io/geointseed/my-job-0.1.0-seed:0.1.0"
+	req, _ := http.NewRequest("GET", url, bytes.NewBuffer(payload))
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	m := objects.Seed{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	testManifest := objects.SeedFromManifestFile("../seed.manifest.json")
+
+	mStr := fmt.Sprintf("%v", m)
+	testStr := fmt.Sprintf("%v", testManifest)
+	if mStr != testStr {
+		t.Errorf("Expected manifest to be %v. Got '%v'", testManifest, m)
+	}
+}
+
 func TestListImages(t *testing.T) {
 	payload := []byte(``)
 	req, _ := http.NewRequest("GET", "/images", bytes.NewBuffer(payload))

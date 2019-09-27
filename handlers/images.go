@@ -159,7 +159,14 @@ func JITImageManifest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	regUrl := vars["registry"]
 	imgstr := vars["image"]
-	reg, err := registry.CreateRegistry(regUrl, "", "", "")
+	org := ""
+	if strings.Contains(regUrl, "docker.io") || regUrl == "hub.docker.com" {
+		regUrl = "hub.docker.com"
+		temp := strings.SplitN(imgstr, "/", 2)
+		org = temp[0]
+		imgstr = temp[1]
+	}
+	reg, err := registry.CreateRegistry(regUrl, org, "", "")
 	if err != nil {
 		humanError := checkError(err, regUrl, "", "")
 		respondWithError(w, http.StatusBadRequest, humanError)
