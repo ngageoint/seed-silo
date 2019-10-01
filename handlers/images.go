@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -9,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/ngageoint/seed-common/objects"
+	"github.com/ngageoint/seed-common/registry"
 	"github.com/ngageoint/seed-silo/database"
 	"github.com/ngageoint/seed-silo/models"
 )
@@ -150,4 +153,47 @@ func ImageManifest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, image.Seed)
+}
+
+func JITImageManifest(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	regUrl := vars["registry"]
+	imgstr := vars["image"]
+	org := ""
+	if strings.Contains(regUrl, "docker.io") || regUrl == "hub.docker.com" {
+		regUrl = "hub.docker.com"
+		temp := strings.SplitN(imgstr, "/", 2)
+		org = temp[0]
+		imgstr = temp[1]
+	}
+	reg, err := registry.CreateRegistry(regUrl, org, "", "")
+	if err != nil {
+		humanError := checkError(err, regUrl, "", "")
+		respondWithError(w, http.StatusBadRequest, humanError)
+		return
+	}
+	temp := strings.Split(imgstr, ":")
+	var imageName, imageTag string
+	if len(temp) == 1 {
+		imageName = temp[0]
+		imageTag = "latest"
+	} else if len(temp) == 2 {
+		imageName = temp[0]
+		imageTag = temp[1]
+	} else {
+		respondWithError(w, http.StatusBadRequest, "More than one colon in image name")
+		return
+	}
+	manifest, err := reg.GetImageManifest(imageName, imageTag)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	var seed objects.Seed
+	err = json.Unmarshal([]byte(manifest), &seed)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, seed)
 }

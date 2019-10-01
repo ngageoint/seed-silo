@@ -23,6 +23,7 @@ var handler = map[string]http.HandlerFunc{
 	"SearchJobs": handlers.SearchJobs,
 	"Image": handlers.Image,
 	"ImageManifest": handlers.ImageManifest,
+	"JITImageManifest": handlers.JITImageManifest,
 	"ListJobs": handlers.ListJobs,
 	"Job": handlers.Job,
 	"JobVersions": handlers.JobVersions,

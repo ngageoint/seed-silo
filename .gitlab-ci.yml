@@ -35,7 +35,7 @@ silo-package:
     - silo-build
   script:
     - docker login -u $DOCKER_USER -p "$DOCKER_PASS" $REGISTRY
-    - docker build --label $CI_COMMIT_TAG --build-arg IMAGE=$CENTOS_IMAGE --build-arg CERT_PATH=$CERT_PATH . -t $REGISTRY/$ORG/seed-silo:$CI_COMMIT_TAG
+    - docker build --label $CI_COMMIT_TAG --build-arg IMAGE=$SEED_COMMON:$CI_COMMIT_TAG . -t $REGISTRY/$ORG/seed-silo:$CI_COMMIT_TAG
     - docker push $REGISTRY/$ORG/seed-silo:$CI_COMMIT_TAG
   only:
     - tags

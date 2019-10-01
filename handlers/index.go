@@ -73,7 +73,12 @@ var routes = []Route{
 	Route{
 		"ImageManifest",
 		"GET",
-		"/images/{id}/manifest",
+		"/images/{id:[0-9]+}/manifest",
+	},
+	Route{
+		"JITImageManifest",
+		"GET",
+		"/images/manifest/{registry}/{image:.+}",
 	},
 	Route{
 		"ListJobs",
