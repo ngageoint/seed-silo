@@ -214,12 +214,23 @@ func TestScanRegistry(t *testing.T) {
 	clearTablePG()
 	clearTable()
 
-	addRegistry()
-
 	payload := []byte(``)
-	req, _ := http.NewRequest("GET", "/registries/1/scan", bytes.NewBuffer(payload))
+	req, _ := http.NewRequest("GET", "/registries/scan", bytes.NewBuffer(payload))
 	req.Header.Set("Authorization", "Token: "+token)
 	response := executeRequest(req)
+
+	checkResponseCode(t, 202, response.Code)
+
+	req, _ = http.NewRequest("GET", "/images", bytes.NewBuffer(payload))
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	addRegistry()
+
+	req, _ = http.NewRequest("GET", "/registries/1/scan", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: "+token)
+	response = executeRequest(req)
 
 	checkResponseCode(t, 202, response.Code)
 
