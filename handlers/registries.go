@@ -111,6 +111,7 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 			} else {
 				respondWithError(w, http.StatusInternalServerError, err2.Error())
 			}
+			return
 		}
 		reginfo.ID = id
 		respondWithJSON(w, http.StatusCreated, reginfo)
