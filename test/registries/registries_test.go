@@ -174,6 +174,13 @@ func TestAddRegistry(t *testing.T) {
 	if m["Org"] != "geointseed" {
 		t.Errorf("Expected org to be 'geointseed'. Got '%v'", m["Org"])
 	}
+
+	// try again, we should get an error as the registry exists
+	req, _ = http.NewRequest("POST", "/registries/add", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: "+token)
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusBadRequest, response.Code)
 }
 
 func TestDeleteRegistry(t *testing.T) {
