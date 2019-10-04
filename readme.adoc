@@ -21,6 +21,42 @@ go get github.com/ngageoint/seed-silo
 ~/go/src/github.com/ngageoint/seed-silo/install-silo.sh
 ----
 
+Or even better, run SILO from a https://hub.docker.com/r/geoint/seed-silo[seed-silo container]:
+
+----
+docker run -p 9000:9000 docker.io/geoint/seed-silo:1.2.1
+----
+
+SILO runs on port 9000 so that port needs to be opened to the docker host.  It could be changed to port 80 if desired
+with the flag '-p 80:9000'.  The command above is all that is needed, but if customization is desired, the following
+environment variables can be passed in:
+
+
+.Environment Variables
+[cols="1,4"]
+|===
+|Name |Description
+
+|SILO_ADMIN
+|Specifies the username of the default admin. If not specified, this defaults to admin.
+
+|SILO_ADMIN_PASSWORD
+|Specifies the password of the default admin. If not specified, the default can be found in the codebase.
+
+|DATABASE_URL
+|Specifies the connection parameters for an existing database to use. This database should have a silo schema.
+ If such a schema does not exist, it will be created. The environment variable follows the syntax outlined at
+ https://github.com/kennethreitz/dj-database-url#url-schema[dj-database-url project]. In short, it follows the form:
+
+ postgis://user:password@host[:port]/name
+
+
+|SILO_LITE_PATH
+|Specifies the path to use for a SQLite database if a postgres url is not specified via DATABASE_URL. If
+ neither it nor DATABASE_URL is set the path /usr/silo/seed-silo.db is used.  A database will be created inside the container
+ if needed or a database can be mounted into the container at the path for persistence between runs.
+|===
+
 == Usage
 
 === Registry
@@ -925,5 +961,5 @@ Authenticates a user and returns a token to be used in subsequent api calls
         Content: { error : "Error unmarshalling json. " }
 
 |Sample Call
-| curl -H "Content-Type: application/json" -d '{"username":"admin", "password": "password"}' "https://localhost:9000/login"
+| curl -H "Content-Type: application/json" -d '{"username":"admin", "password": "password"}' "http://localhost:9000/login"
 |===
