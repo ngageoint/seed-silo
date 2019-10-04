@@ -201,8 +201,10 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	models.BuildJobsList(db, &allImages, dbType)
-	models.StoreOrUpdateImages(db, allImages, dbType)
+	if len(allImages) > 0{
+		models.BuildJobsList(db, &allImages, dbType)
+		models.StoreOrUpdateImages(db, allImages, dbType)
+	}
 }
 
 func ScanRegistries(w http.ResponseWriter, r *http.Request) {
@@ -253,8 +255,10 @@ func ScanRegistries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	models.BuildJobsList(db, &dbImages, dbType)
-	models.StoreImages(db, dbImages, dbType)
+	if len(dbImages) > 0 {
+		models.BuildJobsList(db, &dbImages, dbType)
+		models.StoreImages(db, dbImages, dbType)
+	}
 }
 
 func Scan(w http.ResponseWriter, req *http.Request, registries []models.RegistryInfo) ([]models.Image, error) {
