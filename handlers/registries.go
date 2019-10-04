@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -104,7 +105,13 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 			id, err2 = models.AddRegistryLite(db, reginfo)
 		}
 		if err2 != nil {
-			respondWithError(w, http.StatusInternalServerError, err.Error())
+			errStr := err2.Error()
+			if strings.Contains(strings.ToLower(errStr), "unique") {
+				respondWithJSON(w, http.StatusBadRequest, "Registry already exists with name " + reginfo.Name)
+			} else {
+				respondWithError(w, http.StatusInternalServerError, err2.Error())
+			}
+			return
 		}
 		reginfo.ID = id
 		respondWithJSON(w, http.StatusCreated, reginfo)

@@ -149,7 +149,12 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		id, err2 = models.AddUserLite(db, user)
 	}
 	if err2 != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		errStr := err2.Error()
+		if strings.Contains(strings.ToLower(errStr), "unique") {
+			respondWithJSON(w, http.StatusBadRequest, "User already exists with name " + user.Username)
+		} else {
+			respondWithError(w, http.StatusInternalServerError, err2.Error())
+		}
 		return
 	}
 	user.ID = id

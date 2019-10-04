@@ -99,6 +99,14 @@ func TestAddUser(t *testing.T) {
 	if m["role"] != "admin" {
 		t.Errorf("Expected role to be 'admin'. Got '%v'", m["role"])
 	}
+
+	payload := []byte(`{"username":"test", "password": "hunter17", "role": "admin"}`)
+
+	req, _ := http.NewRequest("POST", "/users/add", bytes.NewBuffer(payload))
+	req.Header.Set("Authorization", "Token: "+token)
+	response = executeRequest(req)
+
+	checkResponseCode(t, http.StatusBadRequest, response.Code)
 }
 
 func TestDeleteUser(t *testing.T) {
