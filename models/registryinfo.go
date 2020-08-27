@@ -17,10 +17,10 @@ type RegistryInfo struct {
 }
 
 type DisplayRegistry struct {
-	ID       int    `db:"id"`
-	Name     string `db:"name"`
-	Url      string `db:"url"`
-	Org      string `db:"org"`
+	ID   int    `db:"id"`
+	Name string `db:"name"`
+	Url  string `db:"url"`
+	Org  string `db:"org"`
 }
 
 func CreateRegistryTable(db *sql.DB, dbType string) {
@@ -37,7 +37,7 @@ func CreateRegistryTable(db *sql.DB, dbType string) {
 	`
 
 	if dbType == "postgres" {
-	    sql_table = strings.Replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
+		sql_table = strings.Replace(sql_table, "id INTEGER PRIMARY KEY AUTOINCREMENT", "id SERIAL PRIMARY KEY", 1)
 	}
 
 	_, err := db.Exec(sql_table)
@@ -77,8 +77,7 @@ func AddRegistryLite(db *sql.DB, r RegistryInfo) (int, error) {
 
 func AddRegistryPg(db *sql.DB, r RegistryInfo) (int, error) {
 	query := `INSERT INTO RegistryInfo(name, url, org, username, password) 
-			VALUES($1, $2, $3, $4, $5) RETURNING id;`
-
+			VALUES($1, $2, $3, $4, $5, $6) RETURNING id;`
 
 	var id int
 	err := db.QueryRow(query, r.Name, r.Url, r.Org, r.Username, r.Password).Scan(&id)
@@ -130,7 +129,7 @@ func GetRegistry(db *sql.DB, id int) (RegistryInfo, error) {
 	return result, err
 }
 
-func GetRegistries(db *sql.DB) ([]RegistryInfo, error){
+func GetRegistries(db *sql.DB) ([]RegistryInfo, error) {
 	rows, err := db.Query("SELECT * FROM RegistryInfo")
 	if err != nil {
 		return nil, err

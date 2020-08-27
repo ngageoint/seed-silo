@@ -14,9 +14,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-common/objects"
-	"github.com/ngageoint/seed-common/registry"
-	"github.com/ngageoint/seed-silo/models"
 	"github.com/ngageoint/seed-silo/database"
+	"github.com/ngageoint/seed-silo/models"
+	"github.com/ngageoint/seed-silo/registry"
 )
 
 // ScanLock is safe to use concurrently.
@@ -107,7 +107,7 @@ func AddRegistry(w http.ResponseWriter, r *http.Request) {
 		if err2 != nil {
 			errStr := err2.Error()
 			if strings.Contains(strings.ToLower(errStr), "unique") {
-				respondWithJSON(w, http.StatusBadRequest, "Registry already exists with name " + reginfo.Name)
+				respondWithJSON(w, http.StatusBadRequest, "Registry already exists with name "+reginfo.Name)
 			} else {
 				respondWithError(w, http.StatusInternalServerError, err2.Error())
 			}
@@ -201,7 +201,7 @@ func ScanRegistry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(allImages) > 0{
+	if len(allImages) > 0 {
 		models.BuildJobsList(db, &allImages, dbType)
 		models.StoreOrUpdateImages(db, allImages, dbType)
 	}
