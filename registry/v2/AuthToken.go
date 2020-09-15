@@ -2,10 +2,10 @@ package v2
 
 import (
 	"encoding/json"
-	"errors"
+
 	"net/http"
 	"net/url"
-	"strconv"
+	// "strconv"
 	"time"
 
 	// manifestV1 "github.com/docker/distribution/manifest/schema1"
@@ -17,8 +17,8 @@ type APIToken struct {
 	Created               time.Time
 	Expires               time.Time
 	realm, service, scope string
-	Token                 string `json:"token"`
-	expiresIn             string `json:"expires_in"`
+	Token                 string  `json:"token"`
+	ExpiresIn             float64 `json:"expires_in"`
 }
 
 func (registry *V2registry) GetOrCreateToken(org string, urlstring string) (APIToken, error) {
@@ -89,8 +89,8 @@ func (registry *V2registry) GetOrCreateToken(org string, urlstring string) (APIT
 			decoder := json.NewDecoder(response.Body)
 			err = decoder.Decode(&apiToken)
 			apiToken.Created = time.Now()
-			expstr, err := strconv.Atoi(apiToken.expiresIn)
-			apiToken.Expires = time.Now().Add(time.Second * time.Duration(expstr))
+			// expstr, err := strconv.Atoi(apiToken.expiresIn)
+			apiToken.Expires = time.Now().Add(time.Second * time.Duration(apiToken.ExpiresIn))
 
 			Authtokenmap().Set(org, apiToken)
 
@@ -104,10 +104,10 @@ func (registry *V2registry) GetOrCreateToken(org string, urlstring string) (APIT
 		if apiToken.IsExpired() {
 			registry.RenewToken(apiToken)
 		}
+		return apiToken, nil
 	}
-	err := errors.New("token is fine")
-	return apiToken, err
-
+	// err := errors.New("token is fine")
+	return apiToken, nil
 }
 
 func (token *APIToken) IsExpired() bool {
@@ -155,7 +155,7 @@ func (registry *V2registry) RenewToken(token APIToken) error {
 	decoder := json.NewDecoder(response.Body)
 	err = decoder.Decode(&token)
 	token.Created = time.Now()
-	expstr, err := strconv.Atoi(token.expiresIn)
-	token.Expires = time.Now().Add(time.Second * time.Duration(expstr))
+	// expstr, err := strconv.Atoi(token.expiresIn)
+	token.Expires = time.Now().Add(time.Second * time.Duration(token.ExpiresIn))
 	return nil
 }
