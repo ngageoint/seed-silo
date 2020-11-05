@@ -1,4 +1,4 @@
-package containeryard
+package gitlab
 
 import (
 	"errors"
@@ -40,6 +40,7 @@ type Result struct {
 	Name string
 }
 
+//Repositories
 func (registry *GitLabRegistry) Repositories() ([]string, error) {
 	url := registry.url("/search?q=%s&t=json", "-seed")
 	repos := make([]string, 0, 10)
@@ -59,14 +60,15 @@ func (registry *GitLabRegistry) Repositories() ([]string, error) {
 
 }
 
-func (registry *ContainerYardRegistry) Tags(repository string) ([]string, error) {
+//Tags returns the tags for a specific gitlab registry
+func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 	url := registry.url("/search?q=%s&t=json", repository)
 	registry.Print("Searching %s for Seed images...\n", url)
 	tags := make([]string, 0, 10)
 	var err error //We create this here, otherwise url will be rescoped with :=
 	var response Response
 
-	err = registry.getContainerYardJson(url, &response)
+	err = registry.getGitLabJson(url, &response)
 	if err == nil {
 		for _, image := range response.Results.Community {
 			for tagName := range image.Tags {
@@ -83,7 +85,7 @@ func (registry *ContainerYardRegistry) Tags(repository string) ([]string, error)
 }
 
 //Images returns all seed images on the registry
-func (registry *ContainerYardRegistry) Images() ([]string, error) {
+func (registry *GitLabRegistry) Images() ([]string, error) {
 	images, err := registry.ImagesWithManifests()
 	imageStrs := []string{}
 	for _, img := range images {
@@ -92,15 +94,15 @@ func (registry *ContainerYardRegistry) Images() ([]string, error) {
 	return imageStrs, err
 }
 
-//Images returns all seed images on the registry along with their manifests, if available
-func (registry *ContainerYardRegistry) ImagesWithManifests() ([]objects.Image, error) {
+//ImagesWithManifests returns all seed images on the registry along with their manifests, if available
+func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
 	//TODO: Update after container yard generates unique manifests for each tag
 	url := registry.url("/search?q=%s&t=json", "-seed")
 	repos := make([]objects.Image, 0, 10)
 	var err error //We create this here, otherwise url will be rescoped with :=
 	var response Response
 
-	err = registry.getContainerYardJson(url, &response)
+	err = registry.getGitLabJson(url, &response)
 	if err == nil {
 		for repoName, image := range response.Results.Community {
 			if !strings.HasPrefix(repoName, registry.Org) {
@@ -176,7 +178,8 @@ func (registry *ContainerYardRegistry) ImagesWithManifests() ([]objects.Image, e
 	return repos, nil
 }
 
-func (registry *ContainerYardRegistry) GetImageManifest(repoName, tag string) (string, error) {
+//GetImageManifest returns the image manifest from a gitlab repo
+func (registry *GitLabRegistry) GetImageManifest(repoName, tag string) (string, error) {
 	manifest := ""
 	mv2, err := registry.v2Base.ManifestV2(repoName, tag)
 	if err == nil {
