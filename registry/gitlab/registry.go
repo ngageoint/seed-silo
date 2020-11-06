@@ -17,8 +17,7 @@ type GitLabRegistry struct {
 	Client   *http.Client
 	Org      string
 	Project  string
-	Username string
-	Password string
+	Token    string
 	v2Base   *v2.V2registry
 	Print    util.PrintCallback
 }
@@ -28,19 +27,21 @@ func (r *GitLabRegistry) Name() string {
 }
 
 //New creates a new gitlab container registry from the given URL
-func New(registryUrl, org, project, username, password string) (*GitLabRegistry, error) {
+func New(registryUrl, org, project, token string) (*GitLabRegistry, error) {
 	if util.PrintUtil == nil {
 		util.InitPrinter(util.PrintErr, os.Stderr, os.Stdout)
 	}
 
 	url := strings.TrimSuffix(registryUrl, "/")
+	project = strings.TrimSuffix(project, "/")
 
-	org_proj := []string{org, project}
-	if strings.TrimSpace(org_proj) != "" {
-		org = strings.Join(org_proj, "/")
+	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
+		org = fmt.Sprintf("%s/%s", org, project)
+	} else if strings.TrimSpace(project) != "" {
+		org = project
 	}
 
-	reg, err := v2.New(url, org, username, password)
+	reg, err := v2.New(url, org, nil, token)
 
 	host := strings.Replace(url, "https://", "", 1)
 	host = strings.Replace(host, "http://", "", 1)
@@ -53,8 +54,7 @@ func New(registryUrl, org, project, username, password string) (*GitLabRegistry,
 		Client:   client,
 		Org:      org,
 		Project:  project,
-		Username: username,
-		Password: password,
+		Token:    token,
 		v2Base:   reg,
 		Print:    util.PrintUtil,
 	}
@@ -68,6 +68,7 @@ func (r *GitLabRegistry) url(pathTemplate string, args ...interface{}) string {
 	return url
 }
 
+//Ping Verifies the registry is alive
 func (r *GitLabRegistry) Ping() error {
 	//query that should quickly return an empty json response
 	url := r.url("/search?q=NoImagesWithThisName&t=json")

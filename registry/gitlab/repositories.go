@@ -2,83 +2,97 @@ package gitlab
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/ngageoint/seed-common/objects"
-	"github.com/ngageoint/seed-common/util"
 )
 
-type Response struct {
-	Results Results
+//Result struct representing JSON result
+type repositoriesResponse struct {
+	Results []Repository
 }
 
-type Results struct {
-	Community map[string]*Image
-	Imports   map[string]*Image
+type Repository struct {
+	Id        int
+	Name      string
+	Path      string
+	ProjectId int
+	Location  string
+	CreatedAt string
+	Tags      []Tag
 }
 
-type Image struct {
-	Author    string
-	Compliant bool
-	Error     bool
-	Labels    map[string]string
-	Obsolete  bool
-	Pulls     string
-	Stars     int
-	Tags      map[string]Tag
+type tagsResponse struct {
+	Results []Tag
 }
 
 type Tag struct {
-	Age     int
-	Created string
-	Digest  string
-	Size    string
+	Name     string
+	Path     string
+	Location string
 }
 
-//Result struct representing JSON result
-type Result struct {
-	Name string
-}
-
-//Repositories
+//Repositories Returns the seed repositories for the given group/org/project
 func (registry *GitLabRegistry) Repositories() ([]string, error) {
-	url := registry.url("/search?q=%s&t=json", "-seed")
+	org := registry.Org
+	project := registry.Project
+
+	var repo string
+	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
+
+		repo := fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
+	} else if strings.TrimSpace(org) != "" {
+		repo := fmt.Sprintf("groups/%s", registry.Org)
+	} else {
+		repo := fmt.Sprintf("projects/%s", strings.ReplaceAll(registry.Project, "/", "%2F"))
+	}
+
+	url := registry.url("/api/v4/%s/registry/repositories", repo)
 	repos := make([]string, 0, 10)
 	var err error //We create this here, otherwise url will be rescoped with :=
-	var response Response
+	var response repositoriesResponse
 
-	err = registry.getContainerYardJson(url, &response)
+	err = registry.getGitLabJson(url, &response)
 	if err == nil {
-		for repoName := range response.Results.Community {
-			repos = append(repos, repoName)
-		}
-		for repoName := range response.Results.Imports {
-			repos = append(repos, repoName)
+		for _, r := range response.Results {
+			if !strings.HasSuffix(r.Name, "-seed") {
+				continue
+			}
+			repos = append(repos, r.Name)
 		}
 	}
 	return repos, err
-
 }
 
 //Tags returns the tags for a specific gitlab registry
 func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
-	url := registry.url("/search?q=%s&t=json", repository)
+
+	org := registry.Org
+	project := registry.Project
+
+	var reg string
+	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
+		reg := fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
+	} else if strings.TrimSpace(org) != "" {
+		reg := fmt.Sprintf("groups/%s", registry.Org)
+	} else {
+		reg := fmt.Sprintf("projects/%s", strings.ReplaceAll(registry.Project, "/", "%2F"))
+	}
+
 	registry.Print("Searching %s for Seed images...\n", url)
+	// Need to find the id of the specific repository
+	var respository string
+
+	url := registry.url("/api/v4/%s/registry/repositories/%s/tags", reg, repository)
 	tags := make([]string, 0, 10)
 	var err error //We create this here, otherwise url will be rescoped with :=
-	var response Response
+	var response tagsResponse
 
 	err = registry.getGitLabJson(url, &response)
 	if err == nil {
-		for _, image := range response.Results.Community {
-			for tagName := range image.Tags {
-				tags = append(tags, tagName)
-			}
-		}
-		for _, image := range response.Results.Imports {
-			for tagName := range image.Tags {
-				tags = append(tags, tagName)
-			}
+		for _, r := range response.Results {
+			tags = append(tags, r.Name)
 		}
 	}
 	return tags, err
@@ -86,96 +100,76 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 
 //Images returns all seed images on the registry
 func (registry *GitLabRegistry) Images() ([]string, error) {
-	images, err := registry.ImagesWithManifests()
-	imageStrs := []string{}
-	for _, img := range images {
-		imageStrs = append(imageStrs, img.Name)
+
+	org := registry.Org
+	project := registry.Project
+
+	var reg string
+	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
+		reg := fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
+	} else if strings.TrimSpace(org) != "" {
+		reg := fmt.Sprintf("groups/%s", registry.Org)
+	} else {
+		reg := fmt.Sprintf("projects/%s", strings.ReplaceAll(registry.Project, "/", "%2F"))
 	}
-	return imageStrs, err
+
+	url := registry.url("/api/v4/%s/registry/repositories/?tags=true", reg)
+	var response repositoriesResponse
+	err := registry.getGitLabJson(url, &response)
+	repos := []string{}
+
+	for _, r := range response.Results {
+		if !strings.HasSuffix(r.Name, "-seed") {
+			continue
+		}
+		if len(r.Tags) > 0 {
+			for _, t := range r.Tags {
+				img := r.Name + ":" + t.Name
+				repos = append(repos, img)
+			}
+		} else {
+			repos = append(repos, r.Name)
+		}
+
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return repos, err
 }
 
 //ImagesWithManifests returns all seed images on the registry along with their manifests, if available
 func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
-	//TODO: Update after container yard generates unique manifests for each tag
-	url := registry.url("/search?q=%s&t=json", "-seed")
-	repos := make([]objects.Image, 0, 10)
-	var err error //We create this here, otherwise url will be rescoped with :=
-	var response Response
+	imageNames, err := registry.Images()
 
-	err = registry.getGitLabJson(url, &response)
-	if err == nil {
-		for repoName, image := range response.Results.Community {
-			if !strings.HasPrefix(repoName, registry.Org) {
-				registry.Print("Skipping image %s because it does not belong to org %s", repoName, registry.Org)
-				continue
-			}
-			manifestLabel := ""
-			for name, value := range image.Labels {
-				if name == "com.ngageoint.seed.manifest" {
-					manifestLabel = util.UnescapeManifestLabel(value)
-				}
-			}
-			if manifestLabel == "" {
-				registry.Print("Skipping image %s due to missing manifest label", repoName)
-				continue
-			}
-			for tagName := range image.Tags {
-				manifestLabel, err = registry.GetImageManifest(repoName, tagName)
-				if err != nil {
-					//skip images with empty manifests
-					registry.Print("ERROR: Error reading v2 manifest for %s: %s\n Skipping.\n", repoName, err.Error())
-					continue
-				}
-				imageStr := repoName + ":" + tagName
-				org := registry.Org
-				parts := strings.SplitN(imageStr, "/", 2)
-				if len(parts) == 2 {
-					org = parts[0]
-					imageStr = parts[1]
-				} else {
-					registry.Print("Error parsing org out of repo name: %s \n", repoName)
-				}
-				img := objects.Image{Name: imageStr, Registry: registry.Hostname, Org: org, Manifest: manifestLabel}
-				repos = append(repos, img)
-			}
-		}
-		for repoName, image := range response.Results.Imports {
-			if !strings.HasPrefix(repoName, registry.Org) {
-				registry.Print("Skipping image %s because it does not belong to org %s", repoName, registry.Org)
-				continue
-			}
-			manifestLabel := ""
-			for name, value := range image.Labels {
-				if name == "com.ngageoint.seed.manifest" {
-					manifestLabel = util.UnescapeManifestLabel(value)
-				}
-			}
-			if manifestLabel == "" {
-				registry.Print("Skipping image %s due to missing manifest label", repoName)
-				continue
-			}
-			for tagName := range image.Tags {
-				manifestLabel, err = registry.GetImageManifest(repoName, tagName)
-				if err != nil {
-					//skip images with empty manifests
-					registry.Print("ERROR: Error reading v2 manifest for %s: %s\n Skipping.\n", repoName, err.Error())
-					continue
-				}
-				imageStr := repoName + ":" + tagName
-				org := registry.Org
-				parts := strings.SplitN(imageStr, "/", 2)
-				if len(parts) == 2 {
-					org = parts[0]
-					imageStr = parts[1]
-				} else {
-					registry.Print("Error parsing org out of repo name: %s \n", repoName)
-				}
-				img := objects.Image{Name: imageStr, Registry: registry.Hostname, Org: org, Manifest: manifestLabel}
-				repos = append(repos, img)
-			}
-		}
+	images := []objects.Image{}
+
+	url := registry.URL
+	var org string
+
+	if registry.Org != "" && registry.Project != "" {
+		org := registry.Org + "/" + registry.Project
+	} else if registry.Org != "" {
+		org := registry.Org
+	} else {
+		org := registry.Project
 	}
-	return repos, nil
+
+	manifest := ""
+	for _, imgstr := range imageNames {
+		temp := strings.Split(imgstr, ":")
+		if len(temp) != 2 {
+			registry.Print("ERROR: Invalid seed name: %s. Unable to split into name/tag pair\n", imgstr)
+			continue
+		}
+		manifest, err = registry.GetImageManifest(temp[0], temp[1])
+		imageStruct := objects.Image{Name: imgstr, Registry: url, Org: org, Manifest: manifest}
+		images = append(images, imageStruct)
+	}
+
+	return images, err
 }
 
 //GetImageManifest returns the image manifest from a gitlab repo

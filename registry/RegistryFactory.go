@@ -8,6 +8,7 @@ import (
 	"github.com/ngageoint/seed-common/objects"
 	"github.com/ngageoint/seed-silo/registry/containeryard"
 	"github.com/ngageoint/seed-silo/registry/dockerhub"
+	"github.com/ngageoint/seed-silo/registry/gitlab"
 	v2 "github.com/ngageoint/seed-silo/registry/v2"
 )
 
@@ -59,6 +60,17 @@ func NewContainerYardRegistry(url, org, username, password string) (RepositoryRe
 	return yard, err
 }
 
+func NewGitLabRegistry(url, org, project, username, password string) (RepositoryRegistry, error) {
+	git, err := gitlab.New(url, org, project, username, password)
+	if err != nil {
+		if strings.Contains(url, "https://")
+		httpFallback := strings.Replace(url, "https://", "http://", 1)
+		git, err = gitlab.New(httpFallback, org, project, username, password)
+	}
+
+	return git, err
+}
+
 func CreateRegistry(url, org, username, password string) (RepositoryRegistry, error) {
 	if !strings.HasPrefix(url, "http") {
 		url = "https://" + url
@@ -101,6 +113,18 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 		}
 	}
 
+	if regtype == "gitlab" {
+		git, err := NewGitLabRegistry(url, org, project, username, password)
+		if err == nil {
+			if git != nil && git.Ping() == nil {
+				return git, nil
+			} else {
+				err = git.Ping()
+
+			}
+		}
+	}
+
 	msg := fmt.Sprintf("ERROR: Could not create registry.  %s: %s", regtype, err.Error())
 	errr := errors.New(msg)
 
@@ -113,6 +137,9 @@ func checkRegistryType(url string) string {
 	}
 	if strings.Contains(url, "containeryard") {
 		return "containeryard"
+	}
+	if strings.Contains(url, "gitlab") {
+		return "gitlab"
 	}
 	return "v2"
 }
