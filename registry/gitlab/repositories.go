@@ -13,20 +13,23 @@ type repositoriesResponse struct {
 	Results []Repository
 }
 
+//Repository struct representing a GitLab repository
 type Repository struct {
-	Id        int
+	ID        int
 	Name      string
 	Path      string
-	ProjectId int
+	ProjectID int
 	Location  string
 	CreatedAt string
 	Tags      []Tag
 }
 
+//tagsResponse struct representing the response to getting the tags of a repository
 type tagsResponse struct {
 	Results []Tag
 }
 
+//Tag struct representing the GitLab tag structure
 type Tag struct {
 	Name     string
 	Path     string
@@ -45,7 +48,7 @@ func (registry *GitLabRegistry) Repositories() ([]string, error) {
 	} else if strings.TrimSpace(org) != "" {
 		repo := fmt.Sprintf("groups/%s", registry.Org)
 	} else {
-		repo := fmt.Sprintf("projects/%s", strings.ReplaceAll(registry.Project, "/", "%2F"))
+		repo := fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
 	}
 
 	url := registry.url("/api/v4/%s/registry/repositories", repo)
@@ -77,7 +80,7 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 	} else if strings.TrimSpace(org) != "" {
 		reg := fmt.Sprintf("groups/%s", registry.Org)
 	} else {
-		reg := fmt.Sprintf("projects/%s", strings.ReplaceAll(registry.Project, "/", "%2F"))
+		reg := fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
 	}
 
 	registry.Print("Searching %s for Seed images...\n", url)
@@ -110,7 +113,7 @@ func (registry *GitLabRegistry) Images() ([]string, error) {
 	} else if strings.TrimSpace(org) != "" {
 		reg := fmt.Sprintf("groups/%s", registry.Org)
 	} else {
-		reg := fmt.Sprintf("projects/%s", strings.ReplaceAll(registry.Project, "/", "%2F"))
+		reg := fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
 	}
 
 	url := registry.url("/api/v4/%s/registry/repositories/?tags=true", reg)
