@@ -43,12 +43,11 @@ func (registry *GitLabRegistry) Repositories() ([]string, error) {
 
 	var repo string
 	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
-
-		repo := fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
+		repo = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
 	} else if strings.TrimSpace(org) != "" {
-		repo := fmt.Sprintf("groups/%s", registry.Org)
+		repo = fmt.Sprintf("groups/%s", registry.Org)
 	} else {
-		repo := fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
+		repo = fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
 	}
 
 	url := registry.url("/api/v4/%s/registry/repositories", repo)
@@ -76,18 +75,17 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 
 	var reg string
 	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
-		reg := fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
+		reg = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
 	} else if strings.TrimSpace(org) != "" {
-		reg := fmt.Sprintf("groups/%s", registry.Org)
+		reg = fmt.Sprintf("groups/%s", registry.Org)
 	} else {
-		reg := fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
+		reg = fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
 	}
 
-	registry.Print("Searching %s for Seed images...\n", url)
 	// Need to find the id of the specific repository
-	var respository string
-
-	url := registry.url("/api/v4/%s/registry/repositories/%s/tags", reg, repository)
+	// var repository string
+	repoId := 1
+	url := registry.url("/api/v4/%s/registry/repositories/%s/tags", reg, repoId)
 	tags := make([]string, 0, 10)
 	var err error //We create this here, otherwise url will be rescoped with :=
 	var response tagsResponse
@@ -109,11 +107,11 @@ func (registry *GitLabRegistry) Images() ([]string, error) {
 
 	var reg string
 	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
-		reg := fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
+		reg = fmt.Sprintf("projects/%s%%2F%s", org, project)
 	} else if strings.TrimSpace(org) != "" {
-		reg := fmt.Sprintf("groups/%s", registry.Org)
+		reg = fmt.Sprintf("groups/%s", org)
 	} else {
-		reg := fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
+		reg = fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
 	}
 
 	url := registry.url("/api/v4/%s/registry/repositories/?tags=true", reg)
@@ -153,11 +151,11 @@ func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
 	var org string
 
 	if registry.Org != "" && registry.Project != "" {
-		org := registry.Org + "/" + registry.Project
+		org = registry.Org + "/" + registry.Project
 	} else if registry.Org != "" {
-		org := registry.Org
+		org = registry.Org
 	} else {
-		org := registry.Project
+		org = registry.Project
 	}
 
 	manifest := ""

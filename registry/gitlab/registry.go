@@ -1,11 +1,13 @@
 package gitlab
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/ngageoint/seed-common/constants"
 	"github.com/ngageoint/seed-common/util"
 	"github.com/ngageoint/seed-silo/registry/v2"
 )
@@ -41,7 +43,7 @@ func New(registryUrl, org, project, token string) (*GitLabRegistry, error) {
 		org = project
 	}
 
-	reg, err := v2.New(url, org, nil, token)
+	reg, err := v2.New(url, org, "", token)
 
 	host := strings.Replace(url, "https://", "", 1)
 	host = strings.Replace(host, "http://", "", 1)
@@ -71,8 +73,14 @@ func (r *GitLabRegistry) url(pathTemplate string, args ...interface{}) string {
 //Ping Verifies the registry is alive
 func (r *GitLabRegistry) Ping() error {
 	//query that should quickly return an empty json response
-	url := r.url("/search?q=NoImagesWithThisName&t=json")
-	var response Response
-	err := r.getGitLabJson(url, &response)
+
+	url := r.url("/v4/groups/%s/registry/repositories", constants.DefaultOrg)
+	resp, err := r.Client.Get(url)
+	if resp != nil {
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			return errors.New(resp.Status)
+		}
+	}
 	return err
 }
