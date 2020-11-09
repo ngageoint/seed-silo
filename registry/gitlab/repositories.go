@@ -39,15 +39,15 @@ type Tag struct {
 //Repositories Returns the seed repositories for the given group/org/project
 func (registry *GitLabRegistry) Repositories() ([]string, error) {
 	org := registry.Org
-	project := registry.Project
+	path := registry.Path
 
 	var repo string
-	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
-		repo = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
+	if strings.TrimSpace(org) != "" && strings.TrimSpace(path) != "" {
+		repo = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
 	} else if strings.TrimSpace(org) != "" {
 		repo = fmt.Sprintf("groups/%s", registry.Org)
 	} else {
-		repo = fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
+		repo = fmt.Sprintf("projects/%s", strings.Replace(registry.Path, "/", "%2F", -1))
 	}
 
 	url := registry.url("/api/v4/%s/registry/repositories", repo)
@@ -71,7 +71,7 @@ func (registry *GitLabRegistry) Repositories() ([]string, error) {
 func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 
 	org := registry.Org
-	project := registry.Project
+	project := registry.Path
 
 	var reg string
 	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
@@ -84,10 +84,13 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 
 	// Need to find the id of the specific repository
 	// var repository string
-	repoId := 1
+	repoId, err := registry.GetRepositoryId(repository)
+	if err != nil {
+		return nil, err
+	}
+
 	url := registry.url("/api/v4/%s/registry/repositories/%s/tags", reg, repoId)
 	tags := make([]string, 0, 10)
-	var err error //We create this here, otherwise url will be rescoped with :=
 	var response tagsResponse
 
 	err = registry.getGitLabJson(url, &response)
@@ -103,7 +106,7 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 func (registry *GitLabRegistry) Images() ([]string, error) {
 
 	org := registry.Org
-	project := registry.Project
+	project := registry.Path
 
 	var reg string
 	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
@@ -111,7 +114,7 @@ func (registry *GitLabRegistry) Images() ([]string, error) {
 	} else if strings.TrimSpace(org) != "" {
 		reg = fmt.Sprintf("groups/%s", org)
 	} else {
-		reg = fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
+		reg = fmt.Sprintf("projects/%s", strings.Replace(registry.Path, "/", "%2F", -1))
 	}
 
 	url := registry.url("/api/v4/%s/registry/repositories/?tags=true", reg)
@@ -150,12 +153,12 @@ func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
 	url := registry.URL
 	var org string
 
-	if registry.Org != "" && registry.Project != "" {
-		org = registry.Org + "/" + registry.Project
+	if registry.Org != "" && registry.Path != "" {
+		org = registry.Org + "/" + registry.Path
 	} else if registry.Org != "" {
 		org = registry.Org
 	} else {
-		org = registry.Project
+		org = registry.Path
 	}
 
 	manifest := ""
@@ -189,4 +192,35 @@ func (registry *GitLabRegistry) GetImageManifest(repoName, tag string) (string, 
 	}
 
 	return manifest, err
+}
+
+//GetRepositoryId returns the id for a given repository located in the GitLab registry
+func (registry *GitLabRegistry) GetRepositoryId(repository string) (int, error) {
+	org := registry.Org
+	path := registry.Path
+
+	var repo string
+	if strings.TrimSpace(org) != "" && strings.TrimSpace(path) != "" {
+		repo = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
+	} else if strings.TrimSpace(org) != "" {
+		repo = fmt.Sprintf("groups/%s", registry.Org)
+	} else {
+		repo = fmt.Sprintf("projects/%s", strings.Replace(registry.Path, "/", "%2F", -1))
+	}
+
+	url := registry.url("/api/v4/%s/registry/repositories", repo)
+	repos := make([]string, 0, 10)
+	var err error //We create this here, otherwise url will be rescoped with :=
+	var response repositoriesResponse
+
+	err = registry.getGitLabJson(url, &response)
+	if err == nil {
+		for _, r := range response.Results {
+			if r.Name == repository {
+				return r.ID, err
+			}
+		}
+	}
+
+	return -1, err
 }

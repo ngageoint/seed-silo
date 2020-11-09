@@ -18,7 +18,7 @@ type GitLabRegistry struct {
 	Hostname string
 	Client   *http.Client
 	Org      string
-	Project  string
+	Path     string
 	Token    string
 	v2Base   *v2.V2registry
 	Print    util.PrintCallback
@@ -29,18 +29,18 @@ func (r *GitLabRegistry) Name() string {
 }
 
 //New creates a new gitlab container registry from the given URL
-func New(registryUrl, org, project, token string) (*GitLabRegistry, error) {
+func New(registryUrl, org, path, token string) (*GitLabRegistry, error) {
 	if util.PrintUtil == nil {
 		util.InitPrinter(util.PrintErr, os.Stderr, os.Stdout)
 	}
 
 	url := strings.TrimSuffix(registryUrl, "/")
-	project = strings.TrimSuffix(project, "/")
+	path = strings.TrimSuffix(path, "/")
 
-	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
-		org = fmt.Sprintf("%s/%s", org, project)
-	} else if strings.TrimSpace(project) != "" {
-		org = project
+	if strings.TrimSpace(org) != "" && strings.TrimSpace(path) != "" {
+		org = fmt.Sprintf("%s/%s", org, path)
+	} else if strings.TrimSpace(path) != "" {
+		org = path
 	}
 
 	reg, err := v2.New(url, org, "", token)
@@ -55,7 +55,7 @@ func New(registryUrl, org, project, token string) (*GitLabRegistry, error) {
 		Hostname: host,
 		Client:   client,
 		Org:      org,
-		Project:  project,
+		Path:     path,
 		Token:    token,
 		v2Base:   reg,
 		Print:    util.PrintUtil,

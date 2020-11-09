@@ -61,11 +61,12 @@ func NewContainerYardRegistry(url, org, username, password string) (RepositoryRe
 }
 
 func NewGitLabRegistry(url, org, project, username, password string) (RepositoryRegistry, error) {
-	git, err := gitlab.New(url, org, project, username, password)
+	git, err := gitlab.New(url, org, project, password)
 	if err != nil {
-		if strings.Contains(url, "https://")
-		httpFallback := strings.Replace(url, "https://", "http://", 1)
-		git, err = gitlab.New(httpFallback, org, project, username, password)
+		if strings.Contains(url, "https://") {
+			httpFallback := strings.Replace(url, "https://", "http://", 1)
+			git, err = gitlab.New(httpFallback, org, project, password)
+		}
 	}
 
 	return git, err
@@ -89,6 +90,7 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 			}
 		}
 	}
+
 	if regtype == "v2" {
 		v2, err := NewV2Registry(url, org, username, password)
 		if err == nil {
@@ -114,13 +116,14 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 	}
 
 	if regtype == "gitlab" {
-		git, err := NewGitLabRegistry(url, org, project, username, password)
+		// separate the group and path from the Org?
+		var path string
+		git, err := NewGitLabRegistry(url, org, path, username, password)
 		if err == nil {
 			if git != nil && git.Ping() == nil {
 				return git, nil
 			} else {
 				err = git.Ping()
-
 			}
 		}
 	}
