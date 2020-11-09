@@ -38,13 +38,11 @@ type Tag struct {
 
 //Repositories Returns the seed repositories for the given group/org/project
 func (registry *GitLabRegistry) Repositories() ([]string, error) {
-	org := registry.Org
-	path := registry.Path
 
 	var repo string
-	if strings.TrimSpace(org) != "" && strings.TrimSpace(path) != "" {
+	if strings.TrimSpace(registry.Org) != "" && strings.TrimSpace(registry.Path) != "" {
 		repo = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
-	} else if strings.TrimSpace(org) != "" {
+	} else if strings.TrimSpace(registry.Org) != "" {
 		repo = fmt.Sprintf("groups/%s", registry.Org)
 	} else {
 		repo = fmt.Sprintf("projects/%s", strings.Replace(registry.Path, "/", "%2F", -1))
@@ -70,16 +68,13 @@ func (registry *GitLabRegistry) Repositories() ([]string, error) {
 //Tags returns the tags for a specific gitlab registry
 func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 
-	org := registry.Org
-	project := registry.Path
-
 	var reg string
-	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
-		reg = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Project)
-	} else if strings.TrimSpace(org) != "" {
+	if strings.TrimSpace(registry.Org) != "" && strings.TrimSpace(registry.Path) != "" {
+		reg = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
+	} else if strings.TrimSpace(registry.Org) != "" {
 		reg = fmt.Sprintf("groups/%s", registry.Org)
 	} else {
-		reg = fmt.Sprintf("projects/%s", strings.Replace(registry.Project, "/", "%2F", -1))
+		reg = fmt.Sprintf("projects/%s", strings.Replace(registry.Path, "/", "%2F", -1))
 	}
 
 	// Need to find the id of the specific repository
@@ -105,14 +100,11 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 //Images returns all seed images on the registry
 func (registry *GitLabRegistry) Images() ([]string, error) {
 
-	org := registry.Org
-	project := registry.Path
-
 	var reg string
-	if strings.TrimSpace(org) != "" && strings.TrimSpace(project) != "" {
-		reg = fmt.Sprintf("projects/%s%%2F%s", org, project)
-	} else if strings.TrimSpace(org) != "" {
-		reg = fmt.Sprintf("groups/%s", org)
+	if strings.TrimSpace(registry.Org) != "" && strings.TrimSpace(registry.Path) != "" {
+		reg = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
+	} else if strings.TrimSpace(registry.Org) != "" {
+		reg = fmt.Sprintf("groups/%s", registry.Org)
 	} else {
 		reg = fmt.Sprintf("projects/%s", strings.Replace(registry.Path, "/", "%2F", -1))
 	}
