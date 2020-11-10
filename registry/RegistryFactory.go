@@ -3,6 +3,7 @@ package registry
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/ngageoint/seed-common/objects"
@@ -60,12 +61,17 @@ func NewContainerYardRegistry(url, org, username, password string) (RepositoryRe
 	return yard, err
 }
 
-func NewGitLabRegistry(url, org, project, username, password string) (RepositoryRegistry, error) {
-	git, err := gitlab.New(url, org, project, password)
+//NewGitLabRegistry Creates a new GitLab registry
+func NewGitLabRegistry(url, org, username, password string) (RepositoryRegistry, error) {
+
+	group, path, err := extractOrgPath(url, org)
+	// Extract group / project information from the org
+
+	git, err := gitlab.New(url, group, path, password)
 	if err != nil {
 		if strings.Contains(url, "https://") {
 			httpFallback := strings.Replace(url, "https://", "http://", 1)
-			git, err = gitlab.New(httpFallback, org, project, password)
+			git, err = gitlab.New(httpFallback, org, path, password)
 		}
 	}
 
@@ -117,8 +123,7 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 
 	if regtype == "gitlab" {
 		// separate the group and path from the Org?
-		var path string
-		git, err := NewGitLabRegistry(url, org, path, username, password)
+		git, err := NewGitLabRegistry(url, org, username, password)
 		if err == nil {
 			if git != nil && git.Ping() == nil {
 				return git, nil
@@ -145,4 +150,32 @@ func checkRegistryType(url string) string {
 		return "gitlab"
 	}
 	return "v2"
+}
+
+//extractOrgPath extracts the group and path portions of a GitLab registry Org field
+func extractOrgPath(url, org string) (group, path string, err error) {
+
+	orgParts := strings.Split(org, "/")
+	if len(orgParts) >= 1 {
+		group = orgParts[0]
+
+		//Try and see if the first part is an organization
+		fullURL := fmt.Sprintf("%s/api/v4/groups/%s", url, group)
+		resp, err := http.Get(fullURL)
+
+		if err != nil {
+			return group, path, err
+		}
+		defer resp.Body.Close()
+
+		// Not a group
+		if resp.StatusCode == 404 {
+			group = ""
+			path = org
+		} else {
+			path = strings.TrimPrefix(org, group)
+		}
+	}
+
+	return group, path, nil
 }

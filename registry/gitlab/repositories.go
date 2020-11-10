@@ -79,12 +79,12 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 
 	// Need to find the id of the specific repository
 	// var repository string
-	repoId, err := registry.GetRepositoryId(repository)
+	repoID, err := registry.GetRepositoryId(repository)
 	if err != nil {
 		return nil, err
 	}
 
-	url := registry.url("/api/v4/%s/registry/repositories/%d/tags", reg, repoId)
+	url := registry.url("/api/v4/%s/registry/repositories/%d/tags", reg, repoID)
 	tags := make([]string, 0, 10)
 	var response tagsResponse
 
