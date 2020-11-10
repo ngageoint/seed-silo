@@ -84,7 +84,7 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 		return nil, err
 	}
 
-	url := registry.url("/api/v4/%s/registry/repositories/%s/tags", reg, repoId)
+	url := registry.url("/api/v4/%s/registry/repositories/%d/tags", reg, repoId)
 	tags := make([]string, 0, 10)
 	var response tagsResponse
 
