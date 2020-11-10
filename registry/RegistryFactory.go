@@ -63,15 +63,14 @@ func NewContainerYardRegistry(url, org, username, password string) (RepositoryRe
 
 //NewGitLabRegistry Creates a new GitLab registry
 func NewGitLabRegistry(url, org, username, password string) (RepositoryRegistry, error) {
-
-	group, path, err := extractOrgPath(url, org)
 	// Extract group / project information from the org
+	group, path, err := extractOrgPath(url, org)
 
 	git, err := gitlab.New(url, group, path, password)
 	if err != nil {
 		if strings.Contains(url, "https://") {
 			httpFallback := strings.Replace(url, "https://", "http://", 1)
-			git, err = gitlab.New(httpFallback, org, path, password)
+			git, err = gitlab.New(httpFallback, group, path, password)
 		}
 	}
 
@@ -90,10 +89,8 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 		if err == nil {
 			if yard != nil && yard.Ping() == nil {
 				return yard, nil
-			} else {
-				err = yard.Ping()
-
 			}
+			err = yard.Ping()
 		}
 	}
 
@@ -102,10 +99,8 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 		if err == nil {
 			if v2 != nil && v2.Ping() == nil {
 				return v2, nil
-			} else {
-				err = v2.Ping()
-
 			}
+			err = v2.Ping()
 		}
 	}
 
@@ -114,22 +109,18 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 		if err == nil {
 			if hub != nil && hub.Ping() == nil {
 				return hub, nil
-			} else {
-				err = hub.Ping()
-
 			}
+			err = hub.Ping()
 		}
 	}
 
 	if regtype == "gitlab" {
-		// separate the group and path from the Org?
 		git, err := NewGitLabRegistry(url, org, username, password)
 		if err == nil {
 			if git != nil && git.Ping() == nil {
 				return git, nil
-			} else {
-				err = git.Ping()
 			}
+			err = git.Ping()
 		}
 	}
 
@@ -159,7 +150,7 @@ func extractOrgPath(url, org string) (group, path string, err error) {
 	if len(orgParts) >= 1 {
 		group = orgParts[0]
 
-		//Try and see if the first part is an organization
+		s //Try and see if the first part is an organization
 		fullURL := fmt.Sprintf("%s/api/v4/groups/%s", url, group)
 		resp, err := http.Get(fullURL)
 
