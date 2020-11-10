@@ -150,7 +150,7 @@ func extractOrgPath(url, org string) (group, path string, err error) {
 	if len(orgParts) >= 1 {
 		group = orgParts[0]
 
-		s //Try and see if the first part is an organization
+		//Try and see if the first part is an organization
 		fullURL := fmt.Sprintf("%s/api/v4/groups/%s", url, group)
 		resp, err := http.Get(fullURL)
 
