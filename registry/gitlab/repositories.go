@@ -201,7 +201,6 @@ func (registry *GitLabRegistry) GetRepositoryId(repository string) (int, error) 
 	}
 
 	url := registry.url("/api/v4/%s/registry/repositories", repo)
-	repos := make([]string, 0, 10)
 	var err error //We create this here, otherwise url will be rescoped with :=
 	var response repositoriesResponse
 
