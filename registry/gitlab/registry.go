@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ngageoint/seed-common/constants"
 	"github.com/ngageoint/seed-common/util"
 	"github.com/ngageoint/seed-silo/registry/v2"
 )
@@ -19,7 +18,7 @@ type GitLabRegistry struct {
 	Client   *http.Client
 	Org      string
 	Path     string
-	Token    string
+	Password string
 	v2Base   *v2.V2registry
 	Print    util.PrintCallback
 }
@@ -29,7 +28,7 @@ func (r *GitLabRegistry) Name() string {
 }
 
 //New creates a new gitlab container registry from the given URL
-func New(registryUrl, org, path, token string) (*GitLabRegistry, error) {
+func New(registryUrl, org, path, password string) (*GitLabRegistry, error) {
 	if util.PrintUtil == nil {
 		util.InitPrinter(util.PrintErr, os.Stderr, os.Stdout)
 	}
@@ -43,7 +42,7 @@ func New(registryUrl, org, path, token string) (*GitLabRegistry, error) {
 		org = path
 	}
 
-	reg, err := v2.New(url, org, "", token)
+	reg, err := v2.New(url, org, "", password)
 
 	host := strings.Replace(url, "https://", "", 1)
 	host = strings.Replace(host, "http://", "", 1)
@@ -56,7 +55,7 @@ func New(registryUrl, org, path, token string) (*GitLabRegistry, error) {
 		Client:   client,
 		Org:      org,
 		Path:     path,
-		Token:    token,
+		Password: password,
 		v2Base:   reg,
 		Print:    util.PrintUtil,
 	}
@@ -72,15 +71,19 @@ func (r *GitLabRegistry) url(pathTemplate string, args ...interface{}) string {
 
 //Ping Verifies the registry is alive
 func (r *GitLabRegistry) Ping() error {
-	//query that should quickly return an empty json response
 
-	url := r.url("/v4/groups/%s/registry/repositories", constants.DefaultOrg)
-	resp, err := r.Client.Get(url)
+	//query that should quickly return not an error
+	url := r.url("/api/v4/groups/")
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("PRIVATE-TOKEN", r.Password)
+	resp, err := r.Client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
 			return errors.New(resp.Status)
 		}
 	}
+
 	return err
 }

@@ -3,13 +3,12 @@ package registry
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/ngageoint/seed-common/objects"
 	"github.com/ngageoint/seed-silo/registry/containeryard"
 	"github.com/ngageoint/seed-silo/registry/dockerhub"
-	"github.com/ngageoint/seed-silo/registry/gitlab"
+	gitlab "github.com/ngageoint/seed-silo/registry/gitlab"
 	v2 "github.com/ngageoint/seed-silo/registry/v2"
 )
 
@@ -64,7 +63,7 @@ func NewContainerYardRegistry(url, org, username, password string) (RepositoryRe
 //NewGitLabRegistry Creates a new GitLab registry
 func NewGitLabRegistry(url, org, username, password string) (RepositoryRegistry, error) {
 	// Extract group / project information from the org
-	group, path, err := extractOrgPath(url, org)
+	group, path, err := gitlab.ExtractOrgPath(url, org, password)
 
 	git, err := gitlab.New(url, group, path, password)
 	if err != nil {
@@ -73,7 +72,6 @@ func NewGitLabRegistry(url, org, username, password string) (RepositoryRegistry,
 			git, err = gitlab.New(httpFallback, group, path, password)
 		}
 	}
-
 	return git, err
 }
 
@@ -141,32 +139,4 @@ func checkRegistryType(url string) string {
 		return "gitlab"
 	}
 	return "v2"
-}
-
-//extractOrgPath extracts the group and path portions of a GitLab registry Org field
-func extractOrgPath(url, org string) (group, path string, err error) {
-
-	orgParts := strings.Split(org, "/")
-	if len(orgParts) >= 1 {
-		group = orgParts[0]
-
-		//Try and see if the first part is an organization
-		fullURL := fmt.Sprintf("%s/api/v4/groups/%s", url, group)
-		resp, err := http.Get(fullURL)
-
-		if err != nil {
-			return group, path, err
-		}
-		defer resp.Body.Close()
-
-		// Not a group
-		if resp.StatusCode == 404 {
-			group = ""
-			path = org
-		} else {
-			path = strings.TrimPrefix(org, group)
-		}
-	}
-
-	return group, path, nil
 }

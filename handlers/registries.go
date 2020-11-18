@@ -16,7 +16,7 @@ import (
 	"github.com/ngageoint/seed-common/objects"
 	"github.com/ngageoint/seed-silo/database"
 	"github.com/ngageoint/seed-silo/models"
-	"github.com/ngageoint/seed-silo/registry"
+	registry "github.com/ngageoint/seed-silo/registry"
 )
 
 // ScanLock is safe to use concurrently.
