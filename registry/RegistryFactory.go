@@ -65,11 +65,11 @@ func NewGitLabRegistry(url, org, username, password string) (RepositoryRegistry,
 	// Extract group / project information from the org
 	group, path, err := gitlab.ExtractOrgPath(url, org, password)
 
-	git, err := gitlab.New(url, group, path, password)
+	git, err := gitlab.New(url, group, path, username, password)
 	if err != nil {
 		if strings.Contains(url, "https://") {
 			httpFallback := strings.Replace(url, "https://", "http://", 1)
-			git, err = gitlab.New(httpFallback, group, path, password)
+			git, err = gitlab.New(httpFallback, group, path, username, password)
 		}
 	}
 	return git, err
