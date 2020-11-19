@@ -142,9 +142,6 @@ func (registry *GitLabRegistry) Images() ([]string, error) {
 //ImagesWithManifests returns all seed images on the registry along with their manifests, if available
 func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
 	log.Printf("Getting imageswithmanifests for registry with url: %s, org: %s, path: %s", registry.URL, registry.Org, registry.Path)
-	group, path, err := ExtractOrgPath(registry.URL, registry.Org, registry.Password)
-	registry.Org = group
-	registry.Path = path
 	imageNames, err := registry.Images()
 
 	images := []objects.Image{}
@@ -184,12 +181,13 @@ func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
 func (registry *GitLabRegistry) GetImageManifest(repoName, tag string) (string, error) {
 	log.Printf("Getting ImageManifest for registry with url: %s, org: %s, path: %s, repoName: %s, tag: %s", registry.URL, registry.Org, registry.Path, repoName, tag)
 	manifest := ""
-	mv2, err := registry.v2Base.ManifestV2(repoName, tag)
+	fullRepo := fmt.Sprintf("%s/%s/%s", registry.Org, registry.Path, repoName)
+	mv2, err := registry.v2Base.ManifestV2(fullRepo, tag)
 	if err == nil {
-		log.Printf("Success getting manifest v2 for %s %s", repoName, tag)
-		resp, err := registry.v2Base.DownloadLayer(repoName, mv2.Config.Digest)
+		log.Printf("Success getting manifest v2 for %s %s", fullRepo, tag)
+		resp, err := registry.v2Base.DownloadLayer(fullRepo, mv2.Config.Digest)
 		if err == nil {
-			log.Printf("Success downloading layer for %s %s", repoName, tag)
+			log.Printf("Success downloading layer for %s %s", fullRepo, tag)
 			manifest, err = objects.GetSeedManifestFromBlob(resp)
 		} else {
 			log.Printf("Error downloading manifest layer: %v", err)
@@ -207,14 +205,11 @@ func (registry *GitLabRegistry) GetImageManifest(repoName, tag string) (string, 
 
 //GetRepositoryInfo returns the id for a given repository located in the GitLab registry
 func (registry *GitLabRegistry) GetRepositoryInfo(repository string) (*Repository, error) {
-	log.Printf("Getting repositoryInfo for registry with url: %s, org: %s, path: %s", registry.URL, registry.Org, registry.Path)
-	org := registry.Org
-	path := registry.Path
 
 	var repo string
-	if strings.TrimSpace(org) != "" && strings.TrimSpace(path) != "" {
+	if strings.TrimSpace(registry.Org) != "" && strings.TrimSpace(registry.Path) != "" {
 		repo = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
-	} else if strings.TrimSpace(org) != "" {
+	} else if strings.TrimSpace(registry.Org) != "" {
 		repo = fmt.Sprintf("groups/%s", registry.Org)
 	} else {
 		repo = fmt.Sprintf("projects/%s", strings.Replace(registry.Path, "/", "%2F", -1))
@@ -250,7 +245,6 @@ func ExtractOrgPath(url, org, token string) (group, path string, err error) {
 		resp, err := client.Do(req)
 
 		if err != nil {
-			log.Printf("Error extracting group. Returning path: %s", org)
 			return "", org, err
 		}
 		defer resp.Body.Close()
@@ -264,6 +258,5 @@ func ExtractOrgPath(url, org, token string) (group, path string, err error) {
 			path = strings.TrimPrefix(path, "/")
 		}
 	}
-	log.Printf("Returning group: %s, path: %s", group, path)
 	return group, path, nil
 }
