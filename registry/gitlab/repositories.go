@@ -101,7 +101,6 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 
 //Images returns all seed images on the registry
 func (registry *GitLabRegistry) Images() ([]string, error) {
-	log.Printf("Getting images for registry with url: %s, org: %s, path: %s", registry.URL, registry.Org, registry.Path)
 	var reg string
 	if strings.TrimSpace(registry.Org) != "" && strings.TrimSpace(registry.Path) != "" {
 		reg = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
@@ -112,11 +111,9 @@ func (registry *GitLabRegistry) Images() ([]string, error) {
 	}
 
 	url := registry.url("/api/v4/%s/registry/repositories/?tags=true", reg)
-	log.Printf("Looking for images on url: %s", url)
 	var response repositoriesResponse
 	err := registry.getGitLabJson(url, &response.Results)
 	repos := []string{}
-	log.Printf("Response: %v", response)
 	for _, r := range response.Results {
 		if !strings.HasSuffix(r.Name, "-seed") {
 			continue
@@ -141,7 +138,6 @@ func (registry *GitLabRegistry) Images() ([]string, error) {
 
 //ImagesWithManifests returns all seed images on the registry along with their manifests, if available
 func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
-	log.Printf("Getting imageswithmanifests for registry with url: %s, org: %s, path: %s", registry.URL, registry.Org, registry.Path)
 	imageNames, err := registry.Images()
 
 	images := []objects.Image{}
@@ -164,11 +160,8 @@ func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
 			registry.Print("ERROR: Invalid seed name: %s. Unable to split into name/tag pair\n", imgstr)
 			continue
 		}
-		log.Printf("Getting image manifest for %s:%s", temp[0], temp[1])
+
 		manifest, err = registry.GetImageManifest(temp[0], temp[1])
-		if err != nil {
-			log.Printf("Error getting imagemanifest: %v", err)
-		}
 		imageStruct := objects.Image{Name: imgstr, Registry: url, Org: org, Manifest: manifest}
 		images = append(images, imageStruct)
 	}
@@ -179,21 +172,23 @@ func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
 
 //GetImageManifest returns the image manifest from a gitlab repo
 func (registry *GitLabRegistry) GetImageManifest(repoName, tag string) (string, error) {
-	log.Printf("Getting ImageManifest for registry with url: %s, org: %s, path: %s, repoName: %s, tag: %s", registry.URL, registry.Org, registry.Path, repoName, tag)
+	fullRepo := repoName
+	if strings.TrimSpace(registry.Org) != "" && strings.TrimSpace(registry.Path) != "" {
+		fullRepo = fmt.Sprintf("%s/%s/%s", registry.Org, registry.Path, repoName)
+	} else if strings.TrimSpace(registry.Org) != "" {
+		fullRepo = fmt.Sprintf("%s/%s", registry.Org, repoName)
+	} else if strings.TrimSpace(registry.Path) != "" {
+		fullRepo = fmt.Sprintf("%s/%s", registry.Path, repoName)
+	}
+
 	manifest := ""
-	fullRepo := fmt.Sprintf("%s/%s/%s", registry.Org, registry.Path, repoName)
+
 	mv2, err := registry.v2Base.ManifestV2(fullRepo, tag)
 	if err == nil {
-		log.Printf("Success getting manifest v2 for %s %s", fullRepo, tag)
 		resp, err := registry.v2Base.DownloadLayer(fullRepo, mv2.Config.Digest)
 		if err == nil {
-			log.Printf("Success downloading layer for %s %s", fullRepo, tag)
 			manifest, err = objects.GetSeedManifestFromBlob(resp)
-		} else {
-			log.Printf("Error downloading manifest layer: %v", err)
 		}
-	} else {
-		log.Printf("Error getting manifestV2: %v", err)
 	}
 
 	if err == nil && manifest == "" {

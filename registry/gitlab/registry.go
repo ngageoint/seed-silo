@@ -3,7 +3,6 @@ package gitlab
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -58,24 +57,13 @@ func New(registryUrl, org, path, username, password string) (*GitLabRegistry, er
 		Path:     path,
 		Username: username,
 		Password: password,
-		// v2Base:   reg,
-		Print: util.PrintUtil,
+		Print:    util.PrintUtil,
 	}
 
+	// Need to set the v2 base url as the location url - not just the registry url
+	// due to differences in accessing the gitlab API vs the docker v2 API
 	location, err := registry.GetRegistryLocation()
-	if err != nil {
-		log.Print("Error getting location of registry")
-	}
-
-	log.Printf("Creating v2 registry with url: %s \norg: %s", registryUrl, v2org)
-	// Need to set the url as the location url
-	// to get that we need to know:
-	// group vs path
-	//
 	reg, err := v2.New(location, v2org, username, password)
-	if err != nil {
-		log.Print("error occurred creating v2 registry")
-	}
 	registry.v2Base = reg
 
 	return registry, err
