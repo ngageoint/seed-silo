@@ -11,9 +11,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/ngageoint/seed-common/objects"
-	"github.com/ngageoint/seed-common/registry"
 	"github.com/ngageoint/seed-silo/database"
 	"github.com/ngageoint/seed-silo/models"
+	"github.com/ngageoint/seed-silo/registry"
 )
 
 func ListImages(w http.ResponseWriter, r *http.Request) {
