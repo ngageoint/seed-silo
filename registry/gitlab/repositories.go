@@ -3,7 +3,6 @@ package gitlab
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -26,11 +25,6 @@ type Repository struct {
 	Tags      []Tag
 }
 
-//tagsResponse struct representing the response to getting the tags of a repository
-type tagsResponse struct {
-	Results []Tag
-}
-
 //Tag struct representing the GitLab tag structure
 type Tag struct {
 	Name     string
@@ -40,7 +34,6 @@ type Tag struct {
 
 //Repositories Returns the seed repositories for the given group/org/project
 func (registry *GitLabRegistry) Repositories() ([]string, error) {
-	log.Printf("Getting repositories for registry with url: %s, org: %s", registry.URL, registry.Org)
 	var repo string
 	if strings.TrimSpace(registry.Org) != "" && strings.TrimSpace(registry.Path) != "" {
 		repo = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
@@ -53,23 +46,24 @@ func (registry *GitLabRegistry) Repositories() ([]string, error) {
 	url := registry.url("/api/v4/%s/registry/repositories", repo)
 	repos := make([]string, 0, 10)
 	var err error //We create this here, otherwise url will be rescoped with :=
-	var response repositoriesResponse
+	var response []Repository
 
 	err = registry.getGitLabJson(url, &response)
 	if err == nil {
-		for _, r := range response.Results {
+		for _, r := range response {
 			if !strings.HasSuffix(r.Name, "-seed") {
 				continue
 			}
 			repos = append(repos, r.Name)
 		}
 	}
+
 	return repos, err
 }
 
 //Tags returns the tags for a specific gitlab registry
 func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
-	log.Printf("Getting tags for registry with url: %s, org: %s", registry.URL, registry.Org)
+
 	var reg string
 	if strings.TrimSpace(registry.Org) != "" && strings.TrimSpace(registry.Path) != "" {
 		reg = fmt.Sprintf("projects/%s%%2F%s", registry.Org, registry.Path)
@@ -88,14 +82,15 @@ func (registry *GitLabRegistry) Tags(repository string) ([]string, error) {
 
 	url := registry.url("/api/v4/%s/registry/repositories/%d/tags", reg, repo.ID)
 	tags := make([]string, 0, 10)
-	var response tagsResponse
+	var response []Tag
 
 	err = registry.getGitLabJson(url, &response)
 	if err == nil {
-		for _, r := range response.Results {
+		for _, r := range response {
 			tags = append(tags, r.Name)
 		}
 	}
+
 	return tags, err
 }
 
@@ -120,6 +115,9 @@ func (registry *GitLabRegistry) Images() ([]string, error) {
 		}
 		if len(r.Tags) > 0 {
 			for _, t := range r.Tags {
+
+				registry.Tags(r.Name)
+
 				img := r.Name + ":" + t.Name
 				repos = append(repos, img)
 			}
@@ -165,7 +163,6 @@ func (registry *GitLabRegistry) ImagesWithManifests() ([]objects.Image, error) {
 		imageStruct := objects.Image{Name: imgstr, Registry: url, Org: org, Manifest: manifest}
 		images = append(images, imageStruct)
 	}
-	log.Printf("Found %d images", len(images))
 
 	return images, err
 }
@@ -212,11 +209,11 @@ func (registry *GitLabRegistry) GetRepositoryInfo(repository string) (*Repositor
 
 	url := registry.url("/api/v4/%s/registry/repositories", repo)
 	var err error //We create this here, otherwise url will be rescoped with :=
-	var response repositoriesResponse
+	var response []Repository
 
 	err = registry.getGitLabJson(url, &response)
 	if err == nil {
-		for _, r := range response.Results {
+		for _, r := range response {
 			if r.Name == repository {
 				return &r, err
 			}
