@@ -77,7 +77,7 @@ func AddRegistryLite(db *sql.DB, r RegistryInfo) (int, error) {
 
 func AddRegistryPg(db *sql.DB, r RegistryInfo) (int, error) {
 	query := `INSERT INTO RegistryInfo(name, url, org, username, password) 
-			VALUES($1, $2, $3, $4, $5, $6) RETURNING id;`
+			VALUES($1, $2, $3, $4, $5) RETURNING id;`
 
 	var id int
 	err := db.QueryRow(query, r.Name, r.Url, r.Org, r.Username, r.Password).Scan(&id)
