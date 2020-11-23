@@ -85,40 +85,40 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 	if regtype == "containeryard" {
 		yard, err := NewContainerYardRegistry(url, org, username, password)
 		if err == nil {
-			if yard != nil && yard.Ping() == nil {
+			err = yard.Ping()
+			if yard != nil && err == nil {
 				return yard, nil
 			}
-			err = yard.Ping()
 		}
 	}
 
 	if regtype == "v2" {
 		v2, err := NewV2Registry(url, org, username, password)
 		if err == nil {
-			if v2 != nil && v2.Ping() == nil {
+			err = v2.Ping()
+			if v2 != nil && err == nil {
 				return v2, nil
 			}
-			err = v2.Ping()
 		}
 	}
 
 	if regtype == "dockerhub" {
 		hub, err := NewDockerHubRegistry(url, org, username, password)
 		if err == nil {
-			if hub != nil && hub.Ping() == nil {
+			err = hub.Ping()
+			if hub != nil && err == nil {
 				return hub, nil
 			}
-			err = hub.Ping()
 		}
 	}
 
 	if regtype == "gitlab" {
 		git, err := NewGitLabRegistry(url, org, username, password)
 		if err == nil {
-			if git != nil && git.Ping() == nil {
+			err = git.Ping()
+			if git != nil && err == nil {
 				return git, nil
 			}
-			err = git.Ping()
 		}
 	}
 
