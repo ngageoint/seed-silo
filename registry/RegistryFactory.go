@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -89,6 +88,12 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 			if yard != nil && err == nil {
 				return yard, nil
 			}
+
+			if yard == nil && err != nil {
+				err = fmt.Errorf("ERROR: Could not create registry %s: %s", regtype, err.Error())
+			} else if yard == nil && err == nil {
+				err = fmt.Errorf("ERROR: Could not create registry %s: Unknown error", regtype)
+			}
 		}
 	}
 
@@ -98,6 +103,12 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 			err = v2.Ping()
 			if v2 != nil && err == nil {
 				return v2, nil
+			}
+
+			if v2 == nil && err != nil {
+				err = fmt.Errorf("ERROR: Could not create registry %s: %s", regtype, err.Error())
+			} else if v2 == nil && err == nil {
+				err = fmt.Errorf("ERROR: Could not create registry %s: Unknown error", regtype)
 			}
 		}
 	}
@@ -109,6 +120,12 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 			if hub != nil && err == nil {
 				return hub, nil
 			}
+
+			if hub == nil && err != nil {
+				err = fmt.Errorf("ERROR: Could not create registry %s: %s", regtype, err.Error())
+			} else if hub == nil && err == nil {
+				err = fmt.Errorf("ERROR: Could not create registry %s: Unknown error", regtype)
+			}
 		}
 	}
 
@@ -119,13 +136,16 @@ func CreateRegistry(url, org, username, password string) (RepositoryRegistry, er
 			if git != nil && err == nil {
 				return git, nil
 			}
+
+			if git == nil && err != nil {
+				err = fmt.Errorf("ERROR: Could not create registry %s: %s", regtype, err.Error())
+			} else if git == nil && err == nil {
+				err = fmt.Errorf("ERROR: Could not create registry %s: Unknown error", regtype)
+			}
 		}
 	}
 
-	msg := fmt.Sprintf("ERROR: Could not create registry.  %s: %s", regtype, err.Error())
-	errr := errors.New(msg)
-
-	return nil, errr
+	return nil, err
 }
 
 func checkRegistryType(url string) string {
