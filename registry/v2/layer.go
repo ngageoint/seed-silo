@@ -3,6 +3,7 @@ package v2
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -12,7 +13,7 @@ import (
 
 func (registry *V2registry) DownloadLayer(repository string, digest digest.Digest) (io.ReadCloser, error) {
 	url := registry.url("/v2/%s/blobs/%s", repository, digest)
-	// registry.Logf("registry.layer.download url=%s repository=%s digest=%s", url, repository, digest)
+	log.Printf("registry.layer.download url=%s repository=%s digest=%s", url, repository, digest)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -23,6 +24,7 @@ func (registry *V2registry) DownloadLayer(repository string, digest digest.Diges
 		return nil, err
 	}
 
+	log.Printf("Setting auth token to: %s", token.Token)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.Token))
 	// req.SetBasicAuth(registry.Username, registry.Password)
 

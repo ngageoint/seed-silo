@@ -2,9 +2,11 @@ package v2
 
 import (
 	"encoding/json"
+	"log"
 
 	"net/http"
 	"net/url"
+
 	// "strconv"
 	"time"
 
@@ -25,6 +27,7 @@ func (registry *V2registry) GetOrCreateToken(org string, urlstring string) (APIT
 
 	apiToken := APIToken{}
 	if !Authtokenmap().Check(org) {
+		log.Printf("Creating new auth token...")
 		//token doesent exist yet
 		req, err := http.NewRequest("GET", urlstring, nil)
 
@@ -89,6 +92,7 @@ func (registry *V2registry) GetOrCreateToken(org string, urlstring string) (APIT
 			decoder := json.NewDecoder(response.Body)
 			err = decoder.Decode(&apiToken)
 			apiToken.Created = time.Now()
+			log.Printf("API expires in: %v", apiToken.ExpiresIn)
 			// expstr, err := strconv.Atoi(apiToken.expiresIn)
 			apiToken.Expires = time.Now().Add(time.Second * time.Duration(apiToken.ExpiresIn))
 
@@ -96,12 +100,14 @@ func (registry *V2registry) GetOrCreateToken(org string, urlstring string) (APIT
 
 		}
 	} else { //token exists, check expiration
+		log.Printf("Using existing auth token and checking expiration...")
 		apiToken, err := Authtokenmap().Get(org)
 
 		if err != nil {
 			return apiToken, err
 		}
 		if apiToken.IsExpired() {
+			log.Printf("Token expired, renewing token...")
 			registry.RenewToken(apiToken)
 		}
 		return apiToken, nil

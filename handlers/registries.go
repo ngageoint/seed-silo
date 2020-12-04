@@ -285,7 +285,7 @@ func Scan(w http.ResponseWriter, req *http.Request, registries []models.Registry
 			image := models.Image{FullName: img.Name, Registry: img.Registry, Org: img.Org, Manifest: img.Manifest, RegistryId: r.ID}
 			err1 := json.Unmarshal([]byte(img.Manifest), &image.Seed)
 			if err1 != nil {
-				log.Printf("Error unmarshalling seed manifest for %s: %s \n", img.Name, err1.Error())
+				log.Printf("Error unmarshalling seed manifest in Scan() for %s: %s \n", img.Name, err1.Error())
 			}
 			image.ShortName = image.Seed.Job.Name
 			image.Title = image.Seed.Job.Title

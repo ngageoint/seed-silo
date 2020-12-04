@@ -5,7 +5,9 @@ import (
 	// "encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+
 	// "net/url"
 
 	"github.com/docker/distribution/digest"
@@ -46,7 +48,7 @@ func (registry *V2registry) Manifest(repository, reference string) (*manifestV1.
 
 func (registry *V2registry) ManifestV2(repository, reference string) (*manifestV2.DeserializedManifest, error) {
 	registryURL := registry.url("/v2/%s/manifests/%s", repository, reference)
-	// registry.Logf("registry.manifest.get url=%s repository=%s reference=%s", url, repository, reference)
+	log.Printf("registry.manifest.get url=%s repository=%s reference=%s", registryURL, repository, reference)
 
 	req, err := http.NewRequest("GET", registryURL, nil)
 	if err != nil {
@@ -58,6 +60,7 @@ func (registry *V2registry) ManifestV2(repository, reference string) (*manifestV
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Setting auth token to: %s", token.Token)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.Token))
 	// req.SetBasicAuth(registry.Username, registry.Password)
 
@@ -69,6 +72,10 @@ func (registry *V2registry) ManifestV2(repository, reference string) (*manifestV
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Manifest response returned error code: %v", resp.StatusCode)
+		log.Printf("Manifest response body: \n %s", body)
+	}
 	if err != nil {
 		return nil, err
 	}
