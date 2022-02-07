@@ -82,7 +82,7 @@ func (r *GitLabRegistry) GetRegistryLocation() (string, error) {
 	}
 
 	// List the repositories for the registry so we can grab the location field
-	url := r.url("/api/v4/%s/registry/repositories", repo)
+	url := r.url("/api/v4/%s/registry/repositories?per_page=200", repo)
 	var response []Repository
 
 	err := r.getGitLabJson(url, &response)
